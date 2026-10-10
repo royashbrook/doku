@@ -40,13 +40,14 @@
 <style>
   .pet {
     display: inline-block;
+    flex-shrink: 0;
     width: 94%;
     height: 94%;
     pointer-events: none;
     user-select: none;
     filter: drop-shadow(0 2px 1px rgb(44 35 27 / 0.16));
   }
-  .pet.large {
+  .large {
     width: 170px;
     height: 170px;
   }

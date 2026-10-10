@@ -486,7 +486,7 @@ nav button:hover {
 }
 .win {
   position: absolute;
-  inset: 12% 6%;
+  inset: 4% 6%;
   background: var(--surface-raised);
   box-shadow: var(--shadow);
   border-radius: var(--radius);
@@ -495,13 +495,14 @@ nav button:hover {
   justify-content: center;
   flex-direction: column;
   text-align: center;
-  gap: 14px;
-  padding: 20px;
+  gap: 10px;
+  padding: 16px;
   border: 1px solid var(--line);
 }
 .win-pets {
   width: 80px;
   height: 80px;
+  flex-shrink: 0;
 }
 .win p {
   color: var(--ink-dim);
@@ -841,8 +842,9 @@ textarea {
   .skin-choices button {
     padding: 14px 4px;
   }
-  .skin-choices button img {
+  .skin-choices button .pet {
     max-width: 120px;
+    max-height: 120px;
   }
   .skin-choices span {
     font-size: 12px;
@@ -860,7 +862,7 @@ textarea {
     width: 132px;
     height: 132px;
   }
-  .pet-bubble img {
+  .pet-bubble .pet {
     max-width: 136px;
     max-height: 136px;
   }

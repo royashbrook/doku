@@ -306,3 +306,49 @@ test("visibility handler pauses and resumes decorative faces", async ({
     )
     .toBe("running");
 });
+
+test("every pet surface clips one full-size face, including compact home and looks", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  const assertFrames = async (selector: string) =>
+    expect(async () => {
+      const frames = await page.locator(selector).evaluateAll((elements) =>
+        elements.map((pet) => {
+          const frame = pet.querySelector(".pet-face")!.getBoundingClientRect();
+          const image = pet.querySelector("img")!.getBoundingClientRect();
+          return {
+            width: frame.width,
+            height: frame.height,
+            imageWidth: image.width,
+            imageHeight: image.height,
+          };
+        }),
+      );
+      expect(frames.length).toBeGreaterThan(0);
+      for (const frame of frames) {
+        expect(frame.width).toBeGreaterThan(20);
+        expect(frame.height).toBeCloseTo(frame.width, 1);
+        expect(frame.imageWidth).toBeCloseTo(frame.width * 4, 1);
+        expect(frame.imageHeight).toBeCloseTo(frame.height * 4, 1);
+      }
+    }).toPass({ timeout: 5000 });
+  await page.goto("/");
+  await assertFrames(".pet-bubble .pet");
+  await page.getByRole("button", { name: "looks", exact: true }).click();
+  await assertFrames(".skin-choices .pet");
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  await assertFrames(".how-pet .pet");
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("button", { name: "play", exact: true }).click();
+  for (const at of boards[0].solution) await page.locator(`#cell-${at}`).tap();
+  await assertFrames(".win-pets .pet");
+  const payoff = await page.locator(".win").evaluate((panel) => {
+    const box = panel.getBoundingClientRect();
+    return [...panel.children].map((child) => {
+      const bounds = child.getBoundingClientRect();
+      return { above: bounds.top < box.top, below: bounds.bottom > box.bottom };
+    });
+  });
+  expect(payoff).toEqual(payoff.map(() => ({ above: false, below: false })));
+});
