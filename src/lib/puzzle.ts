@@ -3,7 +3,15 @@ export interface Puzzle {
   size: number;
   regions: number[];
   solution: number[];
-  difficulty: "gentle" | "cozy" | "tricky" | "clever";
+  difficulty:
+    | "gentle"
+    | "cozy"
+    | "tricky"
+    | "clever"
+    | "bright"
+    | "bold"
+    | "expert"
+    | "master";
 }
 
 export function touches(a: number, b: number, size: number): boolean {
@@ -22,53 +30,80 @@ export function conflict(puzzle: Puzzle, a: number, b: number): boolean {
   );
 }
 
-// At most eight rows. Stop at the second witness when checking uniqueness.
+// Start with the tightest row or region. Larger boards otherwise spend most
+// of a hint searching loose top rows before discovering a forced lower square.
 export function solutions(
   puzzle: Pick<Puzzle, "size" | "regions">,
   cells?: Cell[],
   limit = 2,
 ): number[][] {
   const result: number[][] = [],
-    placed: number[] = [],
+    placed: number[] = Array(puzzle.size).fill(-1),
     columns = new Set<number>(),
     regions = new Set<number>();
-  function row(r: number) {
+  const allowed = Array.from({ length: puzzle.size }, (_, r) => {
+    const pets = Array.from(
+      { length: puzzle.size },
+      (_, c) => r * puzzle.size + c,
+    ).filter((at) => cells?.[at] === 2);
+    if (pets.length > 1) return [];
+    return Array.from(
+      { length: puzzle.size },
+      (_, c) => r * puzzle.size + c,
+    ).filter((at) => cells?.[at] !== 1 && (!pets.length || at === pets[0]));
+  });
+  function search(count: number) {
     if (result.length >= limit) return;
-    if (r === puzzle.size) {
+    if (count === puzzle.size) {
       result.push([...placed]);
       return;
     }
-    const forced =
-      cells?.findIndex(
-        (v, i) => v === 2 && Math.floor(i / puzzle.size) === r,
-      ) ?? -1;
-    if (
-      cells &&
-      cells.filter((v, i) => v === 2 && Math.floor(i / puzzle.size) === r)
-        .length > 1
-    )
-      return;
-    for (let c = 0; c < puzzle.size; c++) {
-      const at = r * puzzle.size + c,
+    const byRegion: number[][] = Array.from({ length: puzzle.size }, () => []);
+    let choices: number[] | undefined;
+    const possibleColumns = new Set<number>();
+    for (let r = 0; r < puzzle.size; r++) {
+      if (placed[r] >= 0) continue;
+      const available = allowed[r].filter((at) => {
+        const c = at % puzzle.size;
+        return (
+          !columns.has(c) &&
+          !regions.has(puzzle.regions[at]) &&
+          (r === 0 ||
+            placed[r - 1] < 0 ||
+            Math.abs(c - (placed[r - 1] % puzzle.size)) > 1) &&
+          (r === puzzle.size - 1 ||
+            placed[r + 1] < 0 ||
+            Math.abs(c - (placed[r + 1] % puzzle.size)) > 1)
+        );
+      });
+      if (!available.length) return;
+      if (!choices || available.length < choices.length) choices = available;
+      for (const at of available) {
+        byRegion[puzzle.regions[at]].push(at);
+        possibleColumns.add(at % puzzle.size);
+      }
+    }
+    if (possibleColumns.size < puzzle.size - count) return;
+    for (let region = 0; region < puzzle.size; region++) {
+      if (regions.has(region)) continue;
+      if (!byRegion[region].length) return;
+      if (byRegion[region].length < choices!.length) choices = byRegion[region];
+    }
+    for (const at of choices!) {
+      const r = Math.floor(at / puzzle.size),
+        c = at % puzzle.size,
         region = puzzle.regions[at];
-      if (
-        (forced >= 0 && at !== forced) ||
-        cells?.[at] === 1 ||
-        columns.has(c) ||
-        regions.has(region)
-      )
-        continue;
-      if (r > 0 && Math.abs(c - (placed[r - 1] % puzzle.size)) <= 1) continue;
       columns.add(c);
       regions.add(region);
-      placed.push(at);
-      row(r + 1);
-      placed.pop();
+      placed[r] = at;
+      search(count + 1);
+      placed[r] = -1;
       columns.delete(c);
       regions.delete(region);
+      if (result.length >= limit) return;
     }
   }
-  row(0);
+  search(0);
   return result;
 }
 

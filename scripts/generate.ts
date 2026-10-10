@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { solutions } from "../src/lib/puzzle.ts";
 import type { Puzzle } from "../src/lib/puzzle.ts";
 
@@ -61,29 +61,91 @@ function grow(size: number, solution: number[]): number[] {
   }
   return regions;
 }
-const puzzles: Puzzle[] = [],
-  seen = new Set<string>();
+function connected(regions: number[], region: number, size: number): boolean {
+  const members = regions.flatMap((value, at) =>
+      value === region ? [at] : [],
+    ),
+    reached = new Set([members[0]]),
+    queue = [members[0]];
+  for (const at of queue) {
+    for (const to of [
+      at - size,
+      at + size,
+      ...(at % size ? [at - 1] : []),
+      ...(at % size < size - 1 ? [at + 1] : []),
+    ]) {
+      if (regions[to] === region && !reached.has(to)) {
+        reached.add(to);
+        queue.push(to);
+      }
+    }
+  }
+  return reached.size === members.length;
+}
+function uniqueRegions(puzzle: Puzzle): boolean {
+  const anchors = new Set(puzzle.solution);
+  // Cut a competing placement at a region boundary, without changing the intended solution.
+  // Random growth alone almost never yields a unique large board.
+  for (let step = 0; step < 500; step++) {
+    const found = solutions(puzzle),
+      alternative = found.find((result) =>
+        result.some((at, r) => at !== puzzle.solution[r]),
+      );
+    if (!alternative) return found.length === 1;
+    let changed = false;
+    for (const at of shuffled(alternative.filter((at) => !anchors.has(at)))) {
+      const size = puzzle.size,
+        old = puzzle.regions[at];
+      if (puzzle.regions.filter((region) => region === old).length <= 3)
+        continue;
+      for (const to of shuffled([
+        at - size,
+        at + size,
+        ...(at % size ? [at - 1] : []),
+        ...(at % size < size - 1 ? [at + 1] : []),
+      ])) {
+        const region = puzzle.regions[to];
+        if (region === undefined || region === old) continue;
+        puzzle.regions[at] = region;
+        if (connected(puzzle.regions, old, size)) {
+          changed = true;
+          break;
+        }
+        puzzle.regions[at] = old;
+      }
+      if (changed) break;
+    }
+    if (!changed) return false;
+  }
+  return false;
+}
+// Published indices are saved progress and shared links. Only append new sizes.
+const file = new URL("../src/lib/boards.json", import.meta.url);
+const puzzles: Puzzle[] = JSON.parse(readFileSync(file, "utf8")),
+  seen = new Set(puzzles.map((p) => p.regions.join(",")));
 for (const [size, difficulty] of [
-  [5, "gentle"],
-  [6, "cozy"],
-  [7, "tricky"],
-  [8, "clever"],
+  [9, "bright"],
+  [10, "bold"],
+  [11, "expert"],
+  [12, "master"],
 ] as const) {
+  if (puzzles.some((p) => p.size === size)) continue;
+  seed = 0xd0c02026 ^ size;
   let accepted = 0;
-  for (let attempts = 0; accepted < 32 && attempts < 100000; attempts++) {
+  for (let attempts = 0; accepted < 16 && attempts < 100000; attempts++) {
     const solution = arrangement(size),
       regions = grow(size, solution),
       key = regions.join(",");
     const puzzle: Puzzle = { size, regions, solution, difficulty };
-    if (seen.has(key) || solutions(puzzle).length !== 1) continue;
-    seen.add(key);
+    if (seen.has(key) || !uniqueRegions(puzzle)) continue;
+    const finalKey = puzzle.regions.join(",");
+    if (seen.has(finalKey)) continue;
+    seen.add(finalKey);
     puzzles.push(puzzle);
     accepted++;
+    console.log(`${size}x${size}: ${accepted}/16 (attempt ${attempts + 1})`);
   }
-  if (accepted !== 32) throw new Error(`Could not build ${difficulty} pool`);
+  if (accepted !== 16) throw new Error(`Could not build ${difficulty} pool`);
 }
-writeFileSync(
-  new URL("../src/lib/boards.json", import.meta.url),
-  JSON.stringify(puzzles),
-);
+writeFileSync(file, JSON.stringify(puzzles));
 console.log(`Generated ${puzzles.length} connected, uniquely solvable boards.`);

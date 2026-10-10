@@ -25,6 +25,10 @@
   --region-5: #eec4a4;
   --region-6: #a7dcd7;
   --region-7: #c9cce8;
+  --region-8: #e9c8d9;
+  --region-9: #cfdf9f;
+  --region-10: #bddbd2;
+  --region-11: #dbccb7;
   --grid-line: #5c6765;
   --grid-soft: #76817a66;
   --cross-ink: #3a514c;
@@ -156,6 +160,37 @@ main {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+main.home {
+  --home-pet-size: clamp(96px, calc(100dvh - 650px), 164px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.home > * {
+  flex-shrink: 0;
+}
+.home .pet-pair {
+  height: var(--home-pet-size);
+  margin-bottom: 8px;
+}
+.home .pet-bubble {
+  width: var(--home-pet-size);
+  height: var(--home-pet-size);
+}
+.home .pet-bubble .pet {
+  max-width: 100%;
+  max-height: 100%;
+}
+.home .welcome {
+  margin-bottom: 14px;
+}
+.home .welcome h1 {
+  font-size: clamp(32px, 4.5dvh, 40px);
+}
+.home .welcome p {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 12px 0 16px;
 }
 h1,
 h2,
@@ -411,9 +446,9 @@ nav button:hover {
   z-index: 1;
 }
 .cell .cross {
-  opacity: 0.55;
-  width: 30%;
-  height: 30%;
+  opacity: 0.65;
+  width: 60%;
+  height: 60%;
 }
 .region-label {
   position: absolute;
@@ -485,19 +520,16 @@ nav button:hover {
   opacity: 0.4;
 }
 .win {
-  position: absolute;
-  inset: 4% 6%;
-  background: var(--surface-raised);
-  box-shadow: var(--shadow);
-  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   text-align: center;
   gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--line);
+  padding: 8px 0 0;
+}
+.win-dialog {
+  width: min(380px, calc(100% - 32px));
 }
 .win-pets {
   width: 80px;
@@ -528,7 +560,8 @@ nav button:hover {
   margin: 12px 0 26px;
 }
 .difficulty-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
   background: var(--surface-sunk);
   padding: 4px;
@@ -547,6 +580,12 @@ nav button:hover {
 .difficulty-tabs button.active {
   background: var(--surface-raised);
   color: var(--accent);
+}
+.coming-next {
+  margin-top: 24px;
+  color: var(--ink-dim);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .level-grid {
   display: grid;

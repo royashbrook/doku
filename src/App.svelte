@@ -50,7 +50,7 @@
     pendingImport = $state<Save | null>(null);
   let pwa = $state(initialPwaState()),
     updater: ReturnType<typeof startPwa> | undefined;
-  let group = $state("gentle");
+  let group = $state(5);
   const puzzle = $derived(puzzles[index]);
   const excluded = $derived(blocked(puzzle, cells));
   const pets = $derived(cells.filter((v) => v === 2).length);
@@ -87,6 +87,7 @@
     panel = "";
     if (!isDaily) save.current = at;
     persist();
+    if (finished) panel = "win";
   }
   function edit(at: number, value: Cell) {
     if (finished || cells[at] === value) return;
@@ -99,6 +100,7 @@
     finished = won(puzzle, cells);
     if (finished && !save.completed.includes(index)) save.completed.push(index);
     persist();
+    if (finished) panel = "win";
   }
   function tap(at: number, detail: number) {
     if (mode === "cross") edit(at, detail >= 2 ? 2 : cells[at] === 1 ? 0 : 1);
@@ -332,7 +334,7 @@
     </aside>
   {/if}
 
-  <main>
+  <main class:home={screen === "home"}>
     {#if screen === "home"}
       <section class="welcome">
         <div class="pet-pair">
@@ -355,7 +357,7 @@
         <span class="progress-note"
           >{save.completed.length
             ? `${save.completed.length} puzzles made cozy`
-            : "128 puzzles. all yours."}</span
+            : `${puzzles.length} puzzles. all yours.`}</span
         >
       </section>
       <button
@@ -425,25 +427,13 @@
                   />{:else if cell === 1 || (save.autoCross && excluded.has(at))}<IconX
                     class="cross"
                     size={18}
-                    stroke={2}
+                    stroke={2.75}
                   />{/if}
                 {#if save.labels}<span class="region-label">{region + 1}</span
                   >{/if}
               </button>
             {/each}
           </div>
-          {#if finished}
-            <div class="win" role="status">
-              <span class="win-pets"><Pet skin={save.skin} /></span>
-              <h2>everyone’s home.</h2>
-              <p>nicely done. a little more room?</p>
-              <button class="primary" onclick={next}
-                >next puzzle <IconArrowRight size={20} /></button
-              ><button class="text-button" onclick={() => navigate("levels")}
-                >choose a puzzle</button
-              >
-            </div>
-          {/if}
         </div>
         <div class="mode-picker" aria-label="Placement mode">
           <button
@@ -482,15 +472,16 @@
     {:else if screen === "levels"}
       <section class="scroll-page">
         <h1>find your cozy.</h1>
-        <p class="subhead">a little harder, a little at a time.</p>
+        <p class="subhead">a little room. or a lot. choose your board size.</p>
         <div class="difficulty-tabs">
-          {#each ["gentle", "cozy", "tricky", "clever"] as level}<button
-              class:active={group === level}
-              onclick={() => (group = level)}>{level}</button
+          {#each [...new Set(sizes)] as size}<button
+              class:active={group === size}
+              aria-pressed={group === size}
+              onclick={() => (group = size)}>{size} × {size}</button
             >{/each}
         </div>
         <div class="level-grid">
-          {#each puzzles as board, at}{#if board.difficulty === group}<button
+          {#each puzzles as board, at}{#if board.size === group}<button
                 class:done={save.completed.includes(at)}
                 onclick={() => play(at)}
                 aria-label={`Puzzle ${at + 1}${save.completed.includes(at) ? ", completed" : ""}`}
@@ -501,6 +492,7 @@
                   >{/if}</button
               >{/if}{/each}
         </div>
+        <p class="coming-next">13 × 13 through 16 × 16. more coming.</p>
       </section>
     {:else if screen === "looks"}
       <section class="scroll-page looks">
@@ -544,6 +536,7 @@
 
 <dialog
   bind:this={dialog}
+  class:win-dialog={panel === "win"}
   onkeydown={modalKeys}
   onclose={() => (panel = "")}
   oncancel={() => (panel = "")}
@@ -560,6 +553,7 @@
           import: "use this saved progress?",
           install: "keep doku close",
           share: "send this puzzle",
+          win: "everyone’s home.",
         } as Record<string, string>
       )[panel]}
     </h2>
@@ -567,7 +561,17 @@
       ><IconX size={23} /></button
     >
   </div>
-  {#if panel === "help"}
+  {#if panel === "win"}
+    <div class="win">
+      <span class="win-pets"><Pet skin={save.skin} /></span>
+      <p>nicely done. a little more room?</p>
+      <button class="primary" onclick={next}
+        >next puzzle <IconArrowRight size={20} /></button
+      ><button class="text-button" onclick={() => navigate("levels")}
+        >choose a puzzle</button
+      >
+    </div>
+  {:else if panel === "help"}
     <div class="how-pet"><Pet skin={save.skin} /></div>
     <ol class="rules">
       <li><strong>one per row.</strong> and one per column.</li>

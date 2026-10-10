@@ -64,7 +64,7 @@ test("poodles and theme settings persist without changing the puzzle", async ({
   );
 });
 for (const width of [360, 390, 430])
-  test(`phone ${width}: largest board fits and each square owns 44px`, async ({
+  test(`phone ${width}: 8 by 8 board fits and each square owns 44px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 740 });
