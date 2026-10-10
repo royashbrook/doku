@@ -29,6 +29,7 @@ The four tier names describe board size, not a measured human difficulty score.
 Immutable tags are `vMAJOR.MINOR`. The patch is the number of commits reachable
 since the nearest first-parent anchor. CI requires complete history and a clean tree.
 The content fingerprint identifies a built snapshot independently of its version.
+The no-transform response directive prevents the host from injecting analytics.
 The deployment workflow checks current main, refuses superseded releases and queues
 production writes. Its Cloudflare token is configured as a GitHub secret, never in source.
 
