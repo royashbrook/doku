@@ -60,7 +60,7 @@ test("poodles and theme settings persist without changing the puzzle", async ({
   await page.locator("#cell-" + boards[0].solution[0]).click();
   await expect(page.locator(".pet-cell img")).toHaveAttribute(
     "src",
-    "/poodle.webp",
+    "/poodles-faces.webp",
   );
 });
 for (const width of [360, 390, 430])
@@ -165,6 +165,21 @@ test("offline installed navigation and primary flow, including notices", async (
     (await fetch("/licenses.md")).text(),
   );
   expect(notices).toContain("svelte");
+  const atlases = await page.evaluate(async () =>
+    Promise.all(
+      ["/cats-faces.webp", "/poodles-faces.webp"].map(async (path) => {
+        const response = await fetch(path);
+        return {
+          ok: response.ok,
+          bytes: (await response.arrayBuffer()).byteLength,
+        };
+      }),
+    ),
+  );
+  for (const atlas of atlases) {
+    expect(atlas.ok).toBe(true);
+    expect(atlas.bytes).toBeGreaterThan(1000);
+  }
 });
 test("all normal flows keep requests on the origin and set no cookies", async ({
   page,
@@ -183,7 +198,9 @@ test("all normal flows keep requests on the origin and set no cookies", async ({
   expect(outside).toEqual([]);
   expect(await context.cookies()).toEqual([]);
 });
-test("reduced motion disables pet entrance animation", async ({ page }) => {
+test("reduced motion disables pet entrance, glances and blinks", async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/?puzzle=1");
   await page.locator("#cell-0").click();
@@ -192,4 +209,100 @@ test("reduced motion disables pet entrance animation", async ({ page }) => {
       .locator(".pet-cell img")
       .evaluate((e) => getComputedStyle(e).animationName),
   ).toBe("none");
+  expect(
+    await page
+      .locator(".pet-cell .pet")
+      .evaluate((e) => getComputedStyle(e).animationName),
+  ).toBe("none");
+});
+
+test("pet identities survive reload and skin changes, with visible glance and blink frames", async ({
+  page,
+}) => {
+  await page.goto("/?puzzle=1");
+  for (const at of boards[0].solution.slice(0, 4))
+    await page.locator(`#cell-${at}`).tap();
+  const pets = page.locator(".pet-cell .pet");
+  const identities = await pets.evaluateAll((elements) =>
+    elements.map((pet) => pet.getAttribute("data-face")),
+  );
+  expect(new Set(identities).size).toBe(4);
+  await page.reload();
+  expect(
+    await pets.evaluateAll((elements) =>
+      elements.map((pet) => pet.getAttribute("data-face")),
+    ),
+  ).toEqual(identities);
+
+  const samples = await pets.first().evaluate(async (pet) => {
+    const image = pet.querySelector("img")!;
+    await image.decode();
+    const frame = image.parentElement!;
+    const animation = image.getAnimations()[0];
+    animation.pause();
+    const timing = animation.effect!.getTiming();
+    const positions = [];
+    for (const progress of [0.1, 0.35, 0.65, 0.195]) {
+      animation.currentTime =
+        Number(timing.delay) + Number(timing.duration) * progress;
+      positions.push(
+        Math.round(
+          parseFloat(getComputedStyle(image).left) / frame.clientWidth,
+        ),
+      );
+    }
+    return {
+      positions,
+      row: Math.round(
+        parseFloat(getComputedStyle(image).top) / frame.clientHeight,
+      ),
+    };
+  });
+  expect(samples.positions).toEqual([0, -1, -2, -3]);
+  expect(samples.row + Number(identities[0])).toBe(0);
+
+  await page.getByRole("button", { name: "looks", exact: true }).click();
+  await page.getByRole("button", { name: /poodles a little curly/ }).click();
+  await page.getByRole("button", { name: "play", exact: true }).click();
+  expect(
+    await pets.evaluateAll((elements) =>
+      elements.map((pet) => pet.getAttribute("data-face")),
+    ),
+  ).toEqual(identities);
+  await expect(pets.first().locator("img")).toHaveAttribute(
+    "src",
+    "/poodles-faces.webp",
+  );
+});
+
+test("visibility handler pauses and resumes decorative faces", async ({
+  page,
+}) => {
+  await page.goto("/?puzzle=1");
+  await page.locator("#cell-0").tap();
+  const image = page.locator(".pet-cell img");
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect
+    .poll(() =>
+      image.evaluate((element) => getComputedStyle(element).animationPlayState),
+    )
+    .toBe("paused");
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: false,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect
+    .poll(() =>
+      image.evaluate((element) => getComputedStyle(element).animationPlayState),
+    )
+    .toBe("running");
 });
