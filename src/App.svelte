@@ -492,7 +492,6 @@
                   >{/if}</button
               >{/if}{/each}
         </div>
-        <p class="coming-next">13 × 13 through 16 × 16. more coming.</p>
       </section>
     {:else if screen === "looks"}
       <section class="scroll-page looks">

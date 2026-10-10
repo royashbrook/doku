@@ -10,12 +10,80 @@ import {
   dailyIndex,
 } from "../src/lib/puzzle.ts";
 import type { Puzzle, Cell } from "../src/lib/puzzle.ts";
+import { generationSolutions } from "../scripts/generation-solutions.ts";
+import { extendCore } from "../scripts/generate.ts";
 const boards: Puzzle[] = JSON.parse(
   readFileSync(new URL("../src/lib/boards.json", import.meta.url), "utf8"),
 );
+test("16-square construction preserves a fresh core and every puzzle rule", () => {
+  const core = boards.find(
+    (board) => board.size === 15 && board.solution[14] % 15 < 14,
+  )!;
+  const original = structuredClone(core);
+  for (let sample = 0; sample < 4; sample++) {
+    const board = extendCore(core);
+    assert.equal(board.size, 16);
+    assert.equal(board.regions.length, 256);
+    assert.deepEqual(solutions(board), [board.solution]);
+    assert(
+      won(
+        board,
+        board.regions.map((_, at) => (board.solution.includes(at) ? 2 : 0)),
+      ),
+    );
+    for (let region = 0; region < 16; region++) {
+      const members = board.regions.flatMap((value, at) =>
+        value === region ? [at] : [],
+      );
+      assert(members.length >= 2);
+      const reached = new Set([members[0]]),
+        queue = [members[0]];
+      for (const at of queue)
+        for (const to of members)
+          if (
+            !reached.has(to) &&
+            (Math.abs(at - to) === 16 ||
+              (Math.floor(at / 16) === Math.floor(to / 16) &&
+                Math.abs(at - to) === 1))
+          ) {
+            reached.add(to);
+            queue.push(to);
+          }
+      assert.equal(reached.size, members.length);
+    }
+  }
+  assert.deepEqual(core, original);
+});
+test("offline bit-mask search agrees with gameplay on shipped and ambiguous boards", () => {
+  for (const board of boards)
+    assert.deepEqual(generationSolutions(board), solutions(board));
+  for (const size of [5, 8, 12, 16]) {
+    const regions = Array.from({ length: size * size }, (_, at) =>
+      Math.floor(at / size),
+    );
+    assert.deepEqual(
+      generationSolutions({ size, regions }),
+      solutions({ size, regions }),
+    );
+    const impossible = { size, regions: Array(size * size).fill(0) };
+    assert.deepEqual(generationSolutions(impossible), []);
+  }
+  let seed = 0x131616;
+  for (let sample = 0; sample < 100; sample++) {
+    const size = 5 + (sample % 4);
+    const regions = Array.from({ length: size * size }, () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed % size;
+    });
+    assert.deepEqual(
+      generationSolutions({ size, regions }),
+      solutions({ size, regions }),
+    );
+  }
+});
 test("the entire shipped pool has one solution, one pet per region and connected regions", () => {
-  assert.equal(boards.length, 192);
-  for (const size of [5, 6, 7, 8, 9, 10, 11, 12])
+  assert.equal(boards.length, 256);
+  for (const size of [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
     assert.equal(
       boards.filter((board) => board.size === size).length,
       size < 9 ? 32 : 16,
@@ -26,6 +94,12 @@ test("the entire shipped pool has one solution, one pet per region and connected
       .digest("hex"),
     "3a3bf378ce64efd154895ecdf46fd14279252edc960551877b44f3480e043d37",
   );
+  assert.equal(
+    createHash("sha256")
+      .update(JSON.stringify(boards.slice(0, 192)))
+      .digest("hex"),
+    "c0e20b9dd5b977529bfe9dff2de670b66fd495ddeaf41d103a48adf212a7531f",
+  );
   for (const board of boards) {
     assert.deepEqual(solutions(board, undefined, 2), [board.solution]);
     assert.equal(new Set(board.regions).size, board.size);
@@ -35,6 +109,7 @@ test("the entire shipped pool has one solution, one pet per region and connected
         ),
         visited = new Set([members[0]]),
         queue = [members[0]];
+      if (board.size >= 13) assert(members.length >= 2);
       for (const at of queue)
         for (const next of members)
           if (
