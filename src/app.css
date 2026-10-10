@@ -29,6 +29,10 @@
   --region-9: #cfdf9f;
   --region-10: #bddbd2;
   --region-11: #dbccb7;
+  --region-12: #c0d6e1;
+  --region-13: #ebc0cf;
+  --region-14: #d9d3ac;
+  --region-15: #c7c0d7;
   --grid-line: #5c6765;
   --grid-soft: #76817a66;
   --cross-ink: #3a514c;
@@ -580,12 +584,6 @@ nav button:hover {
 .difficulty-tabs button.active {
   background: var(--surface-raised);
   color: var(--accent);
-}
-.coming-next {
-  margin-top: 24px;
-  color: var(--ink-dim);
-  font-size: 14px;
-  line-height: 1.5;
 }
 .level-grid {
   display: grid;

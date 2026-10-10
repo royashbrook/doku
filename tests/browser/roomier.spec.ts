@@ -76,21 +76,19 @@ test("crosses use most of a square with rounded chunky strokes", async ({
   await page.goto("/?puzzle=1");
   await page.getByRole("button", { name: "cross out", exact: true }).tap();
   await page.locator("#cell-0").tap();
-  const mark = await page
-    .locator("#cell-0 .cross")
-    .evaluate((el) => ({
-      ratio:
-        el.getBoundingClientRect().width /
-        el.parentElement!.getBoundingClientRect().width,
-      stroke: Number(el.getAttribute("stroke-width")),
-      cap: el.getAttribute("stroke-linecap"),
-    }));
+  const mark = await page.locator("#cell-0 .cross").evaluate((el) => ({
+    ratio:
+      el.getBoundingClientRect().width /
+      el.parentElement!.getBoundingClientRect().width,
+    stroke: Number(el.getAttribute("stroke-width")),
+    cap: el.getAttribute("stroke-linecap"),
+  }));
   expect(mark.ratio).toBeGreaterThan(0.5);
   expect(mark.stroke).toBeGreaterThanOrEqual(2.75);
   expect(mark.cap).toBe("round");
 });
 
-test("9 through 12 are directly selectable, playable and saved, with more coming", async ({
+test("9 through 12 remain directly selectable, playable and saved", async ({
   page,
 }) => {
   for (const size of [9, 10, 11, 12]) {
@@ -130,7 +128,5 @@ test("9 through 12 are directly selectable, playable and saved, with more coming
   }
   await page.getByRole("button", { name: "Back to home" }).tap();
   await page.getByRole("button", { name: "all puzzles" }).tap();
-  await expect(
-    page.getByText("13 × 13 through 16 × 16. more coming."),
-  ).toBeVisible();
+  await expect(page.locator(".coming-next")).toHaveCount(0);
 });
