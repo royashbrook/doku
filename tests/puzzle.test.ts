@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import {
   conflict,
   won,
@@ -13,7 +14,18 @@ const boards: Puzzle[] = JSON.parse(
   readFileSync(new URL("../src/lib/boards.json", import.meta.url), "utf8"),
 );
 test("the entire shipped pool has one solution, one pet per region and connected regions", () => {
-  assert.equal(boards.length, 128);
+  assert.equal(boards.length, 192);
+  for (const size of [5, 6, 7, 8, 9, 10, 11, 12])
+    assert.equal(
+      boards.filter((board) => board.size === size).length,
+      size < 9 ? 32 : 16,
+    );
+  assert.equal(
+    createHash("sha256")
+      .update(JSON.stringify(boards.slice(0, 128)))
+      .digest("hex"),
+    "3a3bf378ce64efd154895ecdf46fd14279252edc960551877b44f3480e043d37",
+  );
   for (const board of boards) {
     assert.deepEqual(solutions(board, undefined, 2), [board.solution]);
     assert.equal(new Set(board.regions).size, board.size);
@@ -108,4 +120,49 @@ test("the solver refuses impossible boards and detects ambiguous boards", () => 
   const regions = Array.from({ length: 25 }, (_, at) => Math.floor(at / 5));
   assert.equal(solutions({ size: 5, regions }, undefined, 2).length, 2);
   assert.deepEqual(solutions({ size: 5, regions: Array(25).fill(0) }), []);
+});
+test("an independent region-first oracle verifies every larger board", () => {
+  // Region-first enumeration is independent of the runtime's row/region minimum-domain search.
+  for (const board of boards.filter((board) => board.size >= 9)) {
+    const regions = Array.from({ length: board.size }, (_, region) =>
+      board.regions.flatMap((value, at) => (value === region ? [at] : [])),
+    ).sort((a, b) => a.length - b.length);
+    const placed: number[] = [],
+      witnesses: number[][] = [];
+    function visit(region: number) {
+      if (region === board.size) {
+        witnesses.push([...placed].sort((a, b) => a - b));
+        return;
+      }
+      for (const at of regions[region]) {
+        const row = Math.floor(at / board.size),
+          column = at % board.size;
+        if (
+          placed.some((other) => {
+            const otherRow = Math.floor(other / board.size),
+              otherColumn = other % board.size;
+            return (
+              row === otherRow ||
+              column === otherColumn ||
+              (Math.abs(row - otherRow) <= 1 &&
+                Math.abs(column - otherColumn) <= 1)
+            );
+          })
+        )
+          continue;
+        placed.push(at);
+        visit(region + 1);
+        placed.pop();
+      }
+    }
+    visit(0);
+    assert.deepEqual(witnesses, [board.solution]);
+    // Forced placements on both sides of unassigned rows exercise nonsequential search.
+    const cells: Cell[] = board.regions.map(() => 0);
+    cells[board.solution[1]] = 2;
+    cells[board.solution[board.size - 2]] = 2;
+    assert.deepEqual(solutions(board, cells), [board.solution]);
+    cells[board.solution[0]] = 1;
+    assert.deepEqual(solutions(board, cells), []);
+  }
 });

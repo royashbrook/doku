@@ -3,7 +3,8 @@
 A little room for every pet. An ad-free region-placement puzzle for the family.
 
 One pet in each row, column and color region. Pets cannot touch, even diagonally.
-128 original, uniquely solvable boards across 5×5, 6×6, 7×7 and 8×8 sizes.
+192 original, uniquely solvable boards from 5×5 through 12×12.
+The original 128 puzzles keep their indices; 16 new puzzles accompany each larger size.
 Cat and poodle skins, daylight and evening themes, undo, free hints, optional
 region numbers, progress export/import, and a daily selection from the same pool.
 
@@ -20,9 +21,10 @@ Node 24+, npm. `npm ci`, `npx playwright install chromium webkit`, then `npm run
 `DOKU_TEST_PORT` to run a second checkout without sharing a preview.
 
 The UI is Svelte 5 with strict TypeScript, bundled by Vite. Pure puzzle and save
-functions live in `src/lib`. `npm run generate` deterministically rebuilds the pool;
+functions live in `src/lib`. `npm run generate` deterministically appends any missing 9–12 pools;
 the tests verify every board has exactly one solution and connected regions.
-The four tier names describe board size, not a measured human difficulty score.
+The tier names describe board size, not a measured human difficulty score.
+Large phone boards keep all squares visible rather than promising 44px targets that cannot fit.
 
 ## releases
 
