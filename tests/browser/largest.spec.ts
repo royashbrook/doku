@@ -66,6 +66,11 @@ for (const size of [13, 14, 15, 16]) {
 test("16 square board completes and returns to size selection", async ({
   page,
 }) => {
+  // The hosted WebKit trace spent 1.2–2.2s per native tap. This 16-tap
+  // journey needs its own budget, without permitting an individual stalled action.
+  test.setTimeout(60_000);
+  page.setDefaultTimeout(5_000);
+  page.setDefaultNavigationTimeout(10_000);
   const index = boards.findIndex((board) => board.size === 16);
   expect(index).toBeGreaterThanOrEqual(192);
   await page.addInitScript(() =>
