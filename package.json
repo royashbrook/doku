@@ -1,0 +1,32 @@
+{
+  "name": "doku",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4321 --strictPort",
+    "check": "svelte-check --tsconfig tsconfig.json && tsc -p tsconfig.worker.json",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "generate": "node --experimental-strip-types scripts/generate.ts",
+    "build": "node scripts/build.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 4322 --strictPort",
+    "test:browser": "playwright test",
+    "verify": "npm run check && npm test && npm run build && npm run test:browser"
+  },
+  "dependencies": {
+    "@tabler/icons-svelte": "3.49.0",
+    "svelte": "5.57.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/node": "26.6.5",
+    "prettier": "3.9.9",
+    "prettier-plugin-svelte": "4.1.1",
+    "sharp": "0.35.5",
+    "svelte-check": "4.7.6",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "wrangler": "4.149.0"
+  }
+}
