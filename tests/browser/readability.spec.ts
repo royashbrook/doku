@@ -97,3 +97,76 @@ for (const theme of ["day", "night"])
       ).toBeLessThanOrEqual(0);
     });
   }
+
+for (const theme of ["day", "night"])
+  test(`region labels stay readable over bold crosses in ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.addInitScript(
+      (theme) =>
+        localStorage.setItem(
+          "doku.save.v1",
+          JSON.stringify({
+            schema: 1,
+            skin: "cats",
+            theme,
+            labels: true,
+            autoCross: true,
+            completed: [],
+            current: 0,
+            boards: {},
+          }),
+        ),
+      theme,
+    );
+    const index = boards.findIndex((board) => board.size === 16);
+    await page.goto(`/?puzzle=${index + 1}`);
+    await page.getByRole("button", { name: "cross out", exact: true }).tap();
+    const manual = boards[index].solution.includes(0) ? 1 : 0;
+    await page.locator(`#cell-${manual}`).tap();
+    await page.getByRole("button", { name: "place a pet", exact: true }).tap();
+    await page.locator(`#cell-${boards[index].solution[0]}`).tap();
+    const labels = await page
+      .locator(".crossed .region-label")
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const cell = el.parentElement!,
+            cross = cell.querySelector(".cross")!;
+          const style = getComputedStyle(el),
+            rect = el.getBoundingClientRect(),
+            bounds = cell.getBoundingClientRect();
+          // Geometry alone cannot prove paint order. Temporarily enable hit-testing on
+          // both decorations and ask the browser which one owns the label's pixels.
+          (el as HTMLElement).style.pointerEvents = "auto";
+          (cross as SVGSVGElement).style.pointerEvents = "auto";
+          const topmost =
+            document.elementFromPoint(
+              rect.x + rect.width / 2,
+              rect.y + rect.height / 2,
+            ) === el;
+          (el as HTMLElement).style.removeProperty("pointer-events");
+          (cross as SVGSVGElement).style.removeProperty("pointer-events");
+          return {
+            topmost,
+            fill: style.backgroundColor,
+            cellFill: getComputedStyle(cell).backgroundColor,
+            opacity: style.opacity,
+            text: el.textContent,
+            inside:
+              rect.left >= bounds.left &&
+              rect.right <= bounds.right &&
+              rect.top >= bounds.top &&
+              rect.bottom <= bounds.bottom,
+          };
+        }),
+      );
+    expect(labels.length).toBeGreaterThan(1);
+    expect(labels.some((label) => Number(label.text) >= 10)).toBe(true);
+    for (const label of labels) {
+      expect(label.topmost).toBe(true);
+      expect(label.fill).toBe(label.cellFill);
+      expect(label.opacity).toBe("1");
+      expect(label.inside).toBe(true);
+    }
+  });
