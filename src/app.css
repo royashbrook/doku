@@ -17,25 +17,27 @@
   --shadow: 0 8px 28px rgb(30 62 45 / 0.08);
   --shadow-pressed: 0 2px 8px rgb(30 62 45 / 0.05);
   --mark-heart: #b44966;
-  --region-0: #f4b9b8;
-  --region-1: #b6d9f1;
-  --region-2: #dcc6ec;
-  --region-3: #b8debe;
-  --region-4: #f1d895;
-  --region-5: #eec4a4;
-  --region-6: #a7dcd7;
-  --region-7: #c9cce8;
-  --region-8: #e9c8d9;
-  --region-9: #cfdf9f;
-  --region-10: #bddbd2;
-  --region-11: #dbccb7;
-  --region-12: #c0d6e1;
-  --region-13: #ebc0cf;
-  --region-14: #d9d3ac;
-  --region-15: #c7c0d7;
-  --grid-line: #5c6765;
-  --grid-soft: #76817a66;
-  --cross-ink: #3a514c;
+  /* Keep region identities vivid in both themes. Numbers and boundaries are
+     still needed: colour separation is not a colour-blindness guarantee. */
+  --region-0: #ef6865;
+  --region-1: #49a5e7;
+  --region-2: #ac70d9;
+  --region-3: #55b970;
+  --region-4: #f2c341;
+  --region-5: #e78c37;
+  --region-6: #35bbb3;
+  --region-7: #26d926;
+  --region-8: #e05299;
+  --region-9: #99cc33;
+  --region-10: #d29779;
+  --region-11: #998833;
+  --region-12: #e052e0;
+  --region-13: #29a329;
+  --region-14: #d27988;
+  --region-15: #7082db;
+  --grid-line: #15221e;
+  --grid-soft: #15221e55;
+  --cross-ink: #15221e;
   --cell-glow: #fff6;
 }
 :root[data-theme="night"] {
@@ -450,9 +452,12 @@ nav button:hover {
   z-index: 1;
 }
 .cell .cross {
-  opacity: 0.65;
-  width: 60%;
-  height: 60%;
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 .region-label {
   position: absolute;

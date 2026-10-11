@@ -1,0 +1,99 @@
+import { test, expect } from "@playwright/test";
+import boards from "../../src/lib/boards.json" with { type: "json" };
+
+for (const theme of ["day", "night"])
+  for (const size of [5, 16]) {
+    test(`bold manual and automatic crosses fit the ${size} board in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 360, height: 640 });
+      await page.addInitScript(
+        (theme) =>
+          localStorage.setItem(
+            "doku.save.v1",
+            JSON.stringify({
+              schema: 1,
+              skin: "cats",
+              theme,
+              labels: false,
+              autoCross: true,
+              completed: [],
+              current: 0,
+              boards: {},
+            }),
+          ),
+        theme,
+      );
+      const index = boards.findIndex((board) => board.size === size);
+      await page.goto(`/?puzzle=${index + 1}`);
+      await page.getByRole("button", { name: "cross out", exact: true }).tap();
+      const manual = boards[index].solution.includes(0) ? 1 : 0;
+      await page.locator(`#cell-${manual}`).tap();
+      await page
+        .getByRole("button", { name: "place a pet", exact: true })
+        .tap();
+      await page.locator(`#cell-${boards[index].solution[0]}`).tap();
+      await expect(page.locator(".cross")).not.toHaveCount(0);
+      const marks = await page.locator(".cell .cross").evaluateAll((els) =>
+        els.map((el) => {
+          const svg = el as SVGSVGElement,
+            cell = el.parentElement!,
+            r = cell.getBoundingClientRect();
+          const path = svg.querySelector("path") as SVGPathElement;
+          const box = path.getBBox(),
+            matrix = path.getScreenCTM()!;
+          const stroke = Number(svg.getAttribute("stroke-width"));
+          const start = new DOMPoint(
+            box.x - stroke / 2,
+            box.y - stroke / 2,
+          ).matrixTransform(matrix);
+          const end = new DOMPoint(
+            box.x + box.width + stroke / 2,
+            box.y + box.height + stroke / 2,
+          ).matrixTransform(matrix);
+          return {
+            coverage: (end.x - start.x) / r.width,
+            left: start.x - r.x,
+            right: r.right - end.x,
+            opacity: getComputedStyle(svg).opacity,
+            stroke,
+            cap: svg.getAttribute("stroke-linecap"),
+            color: getComputedStyle(svg).color,
+            fill: getComputedStyle(cell).backgroundColor,
+            owns:
+              document
+                .elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+                ?.closest(".cell") === cell,
+          };
+        }),
+      );
+      const luminance = (s: string) => {
+        const channels = s
+          .match(/[\d.]+/g)!
+          .slice(0, 3)
+          .map(Number)
+          .map((v) => v / 255);
+        return channels
+          .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+          .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+      };
+      for (const mark of marks) {
+        expect(mark.coverage).toBeGreaterThan(0.8);
+        expect(mark.coverage).toBeLessThan(1);
+        expect(mark.left).toBeGreaterThan(0);
+        expect(mark.right).toBeGreaterThan(0);
+        expect(mark.opacity).toBe("1");
+        expect(mark.stroke).toBeGreaterThanOrEqual(3);
+        expect(mark.cap).toBe("round");
+        expect(mark.owns).toBe(true);
+        expect(
+          (luminance(mark.fill) + 0.05) / (luminance(mark.color) + 0.05),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - innerWidth,
+        ),
+      ).toBeLessThanOrEqual(0);
+    });
+  }
