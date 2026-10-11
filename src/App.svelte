@@ -54,6 +54,11 @@
   const puzzle = $derived(puzzles[index]);
   const excluded = $derived(blocked(puzzle, cells));
   const pets = $derived(cells.filter((v) => v === 2).length);
+  const regionPets = $derived(
+    Array.from({ length: puzzle.size }, (_, region) =>
+      cells.findIndex((v, at) => v === 2 && puzzle.regions[at] === region),
+    ),
+  );
   const conflictCells = $derived(
     new Set(
       cells.flatMap((v, i) =>
@@ -379,6 +384,24 @@
     {:else if screen === "play"}
       <section class="game-area" aria-label="Puzzle">
         <div class="game-top">
+          <ul
+            class="region-row"
+            style={`--size:${puzzle.size}`}
+            hidden={!!(pwa.notice || warning)}
+            aria-label="Colors"
+          >
+            {#each regionPets as at, region}
+              <li
+                style={`--region:var(--region-${region})`}
+                aria-label={`Region ${region + 1}: ${at < 0 ? "empty" : save.skin === "cats" ? "cat" : "poodle"}`}
+              >
+                {#if at >= 0}<Pet
+                    skin={save.skin}
+                    identity={index + region}
+                  />{:else if save.labels}{region + 1}{/if}
+              </li>
+            {/each}
+          </ul>
           <span
             ><IconPaw size={19} />
             {pets} / {puzzle.size}
