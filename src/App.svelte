@@ -230,13 +230,14 @@
   }
   function startDrag(event: PointerEvent, at: number) {
     if (
-      mode !== "cross" ||
+      mode === "pet" ||
       (event.pointerType === "mouse" && event.button !== 0)
     )
       return;
     event.preventDefault();
     drag = true;
-    dragValue = cells[at] === 1 ? 0 : 1;
+    const mark = mode === "cross" ? 1 : 3;
+    dragValue = cells[at] === mark ? 0 : mark;
     edit(at, dragValue);
   }
   function dragMove(event: PointerEvent) {
@@ -440,7 +441,7 @@
                 aria-pressed={cell === 2}
                 disabled={finished}
                 onclick={(event) => {
-                  if (mode !== "cross" || event.detail === 0)
+                  if (mode === "pet" || event.detail === 0)
                     tap(at, event.detail);
                 }}
                 onpointerdown={(event) => startDrag(event, at)}
@@ -491,7 +492,7 @@
                 ? "tap a square to place a pet. tap again to lift it."
                 : mode === "cross"
                   ? "tap or slide to cross out squares."
-                  : "tap to mark a maybe. tap again to clear it."}
+                  : "tap or slide to mark squares you are not sure about."}
             </p>{/if}
         </div>
         <div class="game-tools">

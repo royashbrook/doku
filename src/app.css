@@ -424,6 +424,14 @@ nav button:hover {
   color: var(--ink-dim);
 }
 .board-wrap {
+  /* 352px keeps 8x8 squares at 44px. Smaller phones scale down to fit both ways. */
+  --fit: min(
+    352px,
+    100%,
+    calc(
+      100dvh - 288px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    )
+  );
   position: relative;
   width: min(
     100%,
@@ -431,7 +439,7 @@ nav button:hover {
       100dvh - 310px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
     )
   );
-  min-width: 352px;
+  min-width: var(--fit);
   align-self: center;
 }
 /* The rounded clip cuts the edge cells' borders at the corners; redraw the frame on top. */
@@ -904,9 +912,11 @@ textarea {
 }
 @media (max-width: 399px) {
   .mode-picker button {
+    /* Size to the labels, and shrink (wrapping a label) only when a wide font has no room. */
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 5px;
     font-size: 14px;
-    white-space: nowrap;
   }
   .app {
     padding-left: 4px;
@@ -931,7 +941,7 @@ textarea {
     padding-right: 8px;
   }
   .board-wrap {
-    width: 352px;
+    width: var(--fit);
   }
   .skin-choices {
     gap: 8px;
@@ -1004,7 +1014,7 @@ textarea {
     min-height: 62px;
   }
   .app.playing .board-wrap {
-    width: 352px;
+    width: var(--fit);
   }
 }
 @media (max-height: 659px) {
@@ -1056,7 +1066,7 @@ textarea {
   .game-tools button {
     min-width: 90px;
   }
-  .board-wrap {
-    width: 352px;
+  .app.playing .board-wrap {
+    width: min(352px, 100%);
   }
 }
