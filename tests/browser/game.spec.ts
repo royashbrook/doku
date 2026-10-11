@@ -352,3 +352,61 @@ test("every pet surface clips one full-size face, including compact home and loo
   });
   expect(payoff).toEqual(payoff.map(() => ({ above: false, below: false })));
 });
+test("the color row shows each region's pet once it is placed", async ({
+  page,
+}) => {
+  const index = boards.findIndex((board) => board.size === 16);
+  await page.goto(`/?puzzle=${index + 1}`);
+  const row = page.getByRole("list", { name: "Colors" }).getByRole("listitem");
+  await expect(row).toHaveCount(16);
+  await expect(row.locator(".pet")).toHaveCount(0);
+  const at = boards[index].solution[0];
+  const region = boards[index].regions[at];
+  await page.locator(`#cell-${at}`).click();
+  await expect(row.locator(".pet")).toHaveCount(1);
+  await expect(row.nth(region)).toHaveAttribute("aria-label", /: cat$/);
+  await expect(row.nth(region).locator(".pet")).toHaveCount(1);
+  const swatch = await row.nth(region).evaluate((li) => {
+    const cell = document.querySelector(`#cell-${CSS.escape(String(0))}`)!;
+    return {
+      color: getComputedStyle(li).backgroundColor,
+      bottom: li.getBoundingClientRect().bottom,
+      top: cell.getBoundingClientRect().top,
+    };
+  });
+  const cellColor = await page
+    .locator(`#cell-${at}`)
+    .evaluate((cell) => getComputedStyle(cell).backgroundColor);
+  expect(swatch.color).toBe(cellColor);
+  expect(swatch.bottom).toBeLessThan(swatch.top);
+  await page.locator(`#cell-${at}`).click();
+  await expect(row.locator(".pet")).toHaveCount(0);
+});
+test("a frame over the board redraws the corners the rounded clip cuts", async ({
+  page,
+}) => {
+  await page.goto("/?puzzle=1");
+  const frame = await page.locator(".board-wrap").evaluate((wrap) => {
+    const ring = getComputedStyle(wrap, "::after");
+    const board = wrap.querySelector(".board")!.getBoundingClientRect();
+    const box = wrap.getBoundingClientRect();
+    return {
+      content: ring.content,
+      width: ring.borderTopWidth,
+      radius: ring.borderTopLeftRadius,
+      pointer: ring.pointerEvents,
+      covers: [
+        board.left - box.left,
+        board.top - box.top,
+        board.width - box.width,
+      ],
+    };
+  });
+  expect(frame).toEqual({
+    content: '""',
+    width: "2px",
+    radius: "16px",
+    pointer: "none",
+    covers: [0, 0, 0],
+  });
+});
