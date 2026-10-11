@@ -54,7 +54,7 @@ export function parseSave(raw: string, sizes: number[]): Save {
       index >= sizes.length ||
       !Array.isArray(cells) ||
       cells.length !== sizes[index] ** 2 ||
-      !cells.every((v) => v === 0 || v === 1 || v === 2)
+      !cells.every((v) => v === 0 || v === 1 || v === 2 || v === 3)
     )
       throw new Error("This save contains an invalid board.");
     boards[key] = [...cells];

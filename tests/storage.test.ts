@@ -27,6 +27,7 @@ test("progress and settings survive a validated round trip", () => {
   save.completed = [0, 12];
   save.boards["0"] = Array(25).fill(0);
   save.boards["0"][3] = 2;
+  save.boards["0"][4] = 3;
   assert.deepEqual(parseSave(JSON.stringify(save), sizes), save);
 });
 test("import rejects oversized input, unknown schemas, unsafe indices and wrong cell values", () => {
@@ -40,7 +41,7 @@ test("import rejects oversized input, unknown schemas, unsafe indices and wrong 
     { boards: { 0: [9] } },
     { completed: [null] },
     { autoCross: "true" },
-    { boards: { 0: Array(25).fill(3) } },
+    { boards: { 0: Array(25).fill(4) } },
   ])
     assert.throws(() =>
       parseSave(JSON.stringify({ ...fresh(), ...patch }), sizes),
