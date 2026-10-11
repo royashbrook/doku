@@ -912,9 +912,11 @@ textarea {
 }
 @media (max-width: 399px) {
   .mode-picker button {
+    /* Size to the labels, and shrink (wrapping a label) only when a wide font has no room. */
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 5px;
     font-size: 14px;
-    white-space: nowrap;
   }
   .app {
     padding-left: 4px;
