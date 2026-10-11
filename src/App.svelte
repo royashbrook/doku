@@ -14,6 +14,7 @@
     IconSparkles,
     IconArrowBackUp as IconUndo,
     IconX,
+    IconQuestionMark,
     IconHeart,
     IconDownload,
     IconMoon,
@@ -37,7 +38,7 @@
   let index = $state(loaded.save.current),
     cells = $state<Cell[]>([]),
     history = $state<Cell[][]>([]);
-  let mode = $state<"pet" | "cross">("pet"),
+  let mode = $state<"pet" | "cross" | "maybe">("pet"),
     clue = $state<Hint | null>(null),
     message = $state("");
   let daily = $state(false),
@@ -109,6 +110,7 @@
   }
   function tap(at: number, detail: number) {
     if (mode === "cross") edit(at, detail >= 2 ? 2 : cells[at] === 1 ? 0 : 1);
+    else if (mode === "maybe") edit(at, cells[at] === 3 ? 0 : 3);
     else edit(at, cells[at] === 2 ? 0 : 2);
   }
   function undo() {
@@ -434,7 +436,7 @@
                 class:bad={conflictCells.has(at)}
                 class:hinted={clue?.index === at}
                 style={`--region:var(--region-${region});border-top-width:${row === 0 || puzzle.regions[at - puzzle.size] !== region ? 2 : 0.5}px;border-left-width:${col === 0 || puzzle.regions[at - 1] !== region ? 2 : 0.5}px;border-bottom-width:${row === puzzle.size - 1 ? 2 : 0.5}px;border-right-width:${col === puzzle.size - 1 ? 2 : 0.5}px`}
-                aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : "empty"}`}
+                aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : cell === 3 ? "maybe" : "empty"}`}
                 aria-pressed={cell === 2}
                 disabled={finished}
                 onclick={(event) => {
@@ -451,6 +453,10 @@
                     class="cross"
                     size={18}
                     viewBox="4 4 16 16"
+                    stroke={3}
+                  />{:else if cell === 3}<IconQuestionMark
+                    class="maybe"
+                    size={18}
                     stroke={3}
                   />{/if}
                 {#if save.labels}<span class="region-label">{region + 1}</span
@@ -470,6 +476,11 @@
             aria-pressed={mode === "cross"}
             onclick={() => (mode = "cross")}
             ><IconX size={22} />cross out</button
+          ><button
+            class:active={mode === "maybe"}
+            aria-pressed={mode === "maybe"}
+            onclick={() => (mode = "maybe")}
+            ><IconQuestionMark size={22} />maybe</button
           >
         </div>
         <div class="hint-line" aria-live="polite">
@@ -478,7 +489,9 @@
             </p>{:else}<p>
               {mode === "pet"
                 ? "tap a square to place a pet. tap again to lift it."
-                : "tap or slide to cross out squares."}
+                : mode === "cross"
+                  ? "tap or slide to cross out squares."
+                  : "tap to mark a maybe. tap again to clear it."}
             </p>{/if}
         </div>
         <div class="game-tools">
@@ -606,7 +619,7 @@
       </li>
     </ol>
     <p>
-      Tap to place a pet. Choose cross out to mark squares you’ve ruled out.
+      Tap to place a pet. Choose cross out to mark squares you’ve ruled out. Choose maybe to mark squares you’re not sure about.
       Undo and hints are always free.
     </p>
     <button class="primary" onclick={() => (panel = "")}

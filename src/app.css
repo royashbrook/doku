@@ -494,6 +494,11 @@ nav button:hover {
   height: 100%;
   pointer-events: none;
 }
+.cell .maybe {
+  width: 70%;
+  height: 70%;
+  pointer-events: none;
+}
 .region-label {
   position: absolute;
   top: 0;
@@ -898,6 +903,11 @@ textarea {
   }
 }
 @media (max-width: 399px) {
+  .mode-picker button {
+    gap: 5px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
   .app {
     padding-left: 4px;
     padding-right: 4px;
@@ -982,7 +992,7 @@ textarea {
     margin-bottom: 0;
   }
   .region-row {
-    grid-template-columns: repeat(var(--size), minmax(0, 20px));
+    grid-template-columns: repeat(var(--size), minmax(0, 18px));
     gap: 2px;
     margin-bottom: 4px;
   }

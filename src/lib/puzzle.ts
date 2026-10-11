@@ -1,4 +1,4 @@
-export type Cell = 0 | 1 | 2; // empty, crossed out, pet
+export type Cell = 0 | 1 | 2 | 3; // empty, crossed out, pet, maybe
 export interface Puzzle {
   size: number;
   regions: number[];

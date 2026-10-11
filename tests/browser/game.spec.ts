@@ -410,3 +410,29 @@ test("a frame over the board redraws the corners the rounded clip cuts", async (
     covers: [0, 0, 0],
   });
 });
+test("maybe marks a square with a question, without counting as a pet", async ({
+  page,
+}) => {
+  await page.goto("/?puzzle=1");
+  await page.getByRole("button", { name: "maybe", exact: true }).click();
+  await expect(
+    page.getByText("tap to mark a maybe. tap again to clear it."),
+  ).toBeVisible();
+  await page.locator("#cell-0").click();
+  await expect(page.locator("#cell-0")).toHaveAttribute("aria-label", /maybe$/);
+  await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
+  await expect(page.locator(".pet-cell")).toHaveCount(0);
+  await expect(page.locator(".crossed")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
+  await page.getByRole("button", { name: "maybe", exact: true }).click();
+  await page.locator("#cell-0").click();
+  await expect(page.locator("#cell-0")).toHaveAttribute("aria-label", /empty$/);
+  await page.locator("#cell-0").click();
+  await page.getByRole("button", { name: "place a pet", exact: true }).click();
+  await page.locator("#cell-0").click();
+  await expect(page.locator("#cell-0")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#cell-0 .maybe")).toHaveCount(0);
+  await page.getByRole("button", { name: "undo", exact: true }).click();
+  await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
+});
