@@ -422,6 +422,7 @@ nav button:hover {
   -webkit-user-select: none;
 }
 .cell {
+  container-type: inline-size;
   min-height: 0;
   min-width: 0;
   padding: 1px;
@@ -461,18 +462,22 @@ nav button:hover {
 }
 .region-label {
   position: absolute;
-  top: 1px;
-  left: 1px;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1;
-  /* Keep the colour-independent cue readable when a cross fills the cell. */
+  /* The gap between upper X arms holds the label; scale it to the cell. */
   background: var(--region);
   border-radius: 2px;
-  padding: 1px;
+  padding: 0;
   line-height: 1;
   color: var(--cross-ink);
-  font-size: 11px;
+  font-size: clamp(7px, 32cqw, 11px);
   font-weight: 800;
   pointer-events: none;
+}
+.pet-cell .region-label {
+  display: none;
 }
 .mode-picker {
   display: flex;
