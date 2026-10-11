@@ -416,7 +416,7 @@ test("maybe marks a square with a question, without counting as a pet", async ({
   await page.goto("/?puzzle=1");
   await page.getByRole("button", { name: "maybe", exact: true }).click();
   await expect(
-    page.getByText("tap to mark a maybe. tap again to clear it."),
+    page.getByText("tap or slide to mark squares you are not sure about."),
   ).toBeVisible();
   await page.locator("#cell-0").click();
   await expect(page.locator("#cell-0")).toHaveAttribute("aria-label", /maybe$/);
@@ -435,4 +435,51 @@ test("maybe marks a square with a question, without counting as a pet", async ({
   await expect(page.locator("#cell-0 .maybe")).toHaveCount(0);
   await page.getByRole("button", { name: "undo", exact: true }).click();
   await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
+});
+test("maybe slides across a row like cross out, and slides back off", async ({
+  page,
+}) => {
+  await page.goto("/?puzzle=1");
+  await page.getByRole("button", { name: "maybe", exact: true }).click();
+  const centre = async (at: number) => {
+    const box = (await page.locator(`#cell-${at}`).boundingBox())!;
+    return [box.x + box.width / 2, box.y + box.height / 2] as const;
+  };
+  const slide = async (from: number, to: number) => {
+    await page.mouse.move(...(await centre(from)));
+    await page.mouse.down();
+    for (let at = from + 1; at <= to; at++)
+      await page.mouse.move(...(await centre(at)));
+    await page.mouse.up();
+  };
+  await slide(0, 4);
+  for (let at = 0; at <= 4; at++)
+    await expect(page.locator(`#cell-${at}`)).toHaveAttribute(
+      "aria-label",
+      /maybe$/,
+    );
+  await expect(page.locator(".pet-cell")).toHaveCount(0);
+  await slide(0, 4);
+  for (let at = 0; at <= 4; at++)
+    await expect(page.locator(`#cell-${at}`)).toHaveAttribute(
+      "aria-label",
+      /empty$/,
+    );
+});
+test("a 320 by 568 phone scales the board down to fit both ways", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  const index = boards.findIndex((board) => board.size === 16);
+  await page.goto(`/?puzzle=${index + 1}`);
+  const fit = await page.evaluate(() => {
+    const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+    return {
+      scroll: document.documentElement.scrollWidth,
+      board: r(".board").right <= innerWidth && r(".board").left >= 0,
+      below: r(".game-top").top >= r("header").bottom,
+      tools: r(".game-tools").bottom <= innerHeight,
+    };
+  });
+  expect(fit).toEqual({ scroll: 320, board: true, below: true, tools: true });
 });
