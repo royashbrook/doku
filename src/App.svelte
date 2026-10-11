@@ -427,7 +427,8 @@
                   />{:else if cell === 1 || (save.autoCross && excluded.has(at))}<IconX
                     class="cross"
                     size={18}
-                    stroke={2.75}
+                    viewBox="4 4 16 16"
+                    stroke={3}
                   />{/if}
                 {#if save.labels}<span class="region-label">{region + 1}</span
                   >{/if}
