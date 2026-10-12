@@ -1,3 +1,13 @@
+<script module lang="ts">
+  // Warm both face sheets at startup, so the first placed pet has less decode
+  // work left. decoding="sync" below is a hint toward the same end.
+  for (const src of ["/cats-faces.webp", "/poodles-faces.webp"]) {
+    const image = new Image();
+    image.src = src;
+    image.decode().catch(() => {}); // a failed preload leaves the real <img> to load it
+  }
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
 
@@ -32,6 +42,7 @@
     <img
       src={skin === "cats" ? "/cats-faces.webp" : "/poodles-faces.webp"}
       alt=""
+      decoding="sync"
       draggable="false"
     />
   </span>
