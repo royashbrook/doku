@@ -483,3 +483,13 @@ test("a 320 by 568 phone scales the board down to fit both ways", async ({
   });
   expect(fit).toEqual({ scroll: 320, board: true, below: true, tools: true });
 });
+test("placed pets decode in the same frame they are drawn", async ({
+  page,
+}) => {
+  await page.goto("/?puzzle=1");
+  await page.locator("#cell-" + boards[0].solution[0]).click();
+  await expect(page.locator(".pet-cell img")).toHaveAttribute(
+    "decoding",
+    "sync",
+  );
+});

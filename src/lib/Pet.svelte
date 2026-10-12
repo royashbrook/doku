@@ -1,3 +1,13 @@
+<script module lang="ts">
+  // Decode both face sheets at startup. With decoding="sync" below, a placed
+  // pet then paints in the same frame as the crosses, not after its own decode.
+  for (const src of ["/cats-faces.webp", "/poodles-faces.webp"]) {
+    const image = new Image();
+    image.src = src;
+    image.decode().catch(() => {}); // a failed preload leaves the real <img> to load it
+  }
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
 
@@ -32,6 +42,7 @@
     <img
       src={skin === "cats" ? "/cats-faces.webp" : "/poodles-faces.webp"}
       alt=""
+      decoding="sync"
       draggable="false"
     />
   </span>
