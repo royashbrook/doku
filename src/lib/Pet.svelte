@@ -1,6 +1,6 @@
 <script module lang="ts">
-  // Decode both face sheets at startup. With decoding="sync" below, a placed
-  // pet then paints in the same frame as the crosses, not after its own decode.
+  // Warm both face sheets at startup, so the first placed pet has less decode
+  // work left. decoding="sync" below is a hint toward the same end.
   for (const src of ["/cats-faces.webp", "/poodles-faces.webp"]) {
     const image = new Image();
     image.src = src;

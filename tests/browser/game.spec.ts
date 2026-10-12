@@ -483,9 +483,34 @@ test("a 320 by 568 phone scales the board down to fit both ways", async ({
   });
   expect(fit).toEqual({ scroll: 320, board: true, below: true, tools: true });
 });
-test("placed pets decode in the same frame they are drawn", async ({
+test("both face sheets are decoded once at startup, not per placed pet", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    const calls: { path: string; connected: boolean }[] = [];
+    (window as unknown as { decodes: typeof calls }).decodes = calls;
+    const native = HTMLImageElement.prototype.decode;
+    HTMLImageElement.prototype.decode = function () {
+      calls.push({
+        path: new URL(this.src, location.href).pathname,
+        connected: this.isConnected,
+      });
+      return native.call(this);
+    };
+  });
+  const decodes = () =>
+    page.evaluate(() => (window as unknown as { decodes: object[] }).decodes);
+  await page.goto("/?puzzle=1");
+  const startup = [
+    { path: "/cats-faces.webp", connected: false },
+    { path: "/poodles-faces.webp", connected: false },
+  ];
+  await expect.poll(decodes).toEqual(startup);
+  await page.locator("#cell-" + boards[0].solution[0]).click();
+  await expect(page.locator(".pet-cell img")).toHaveCount(1);
+  expect(await decodes()).toEqual(startup);
+});
+test("placed pet images ask for synchronous decoding", async ({ page }) => {
   await page.goto("/?puzzle=1");
   await page.locator("#cell-" + boards[0].solution[0]).click();
   await expect(page.locator(".pet-cell img")).toHaveAttribute(
