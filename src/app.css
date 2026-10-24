@@ -1,57 +1,61 @@
 :root {
-  --surface: #eef5f2;
-  --surface-raised: #fffdf7;
-  --surface-sunk: #e1ede7;
-  --ink: #233e36;
-  --ink-dim: #526b60;
+  --surface: #f3f6fc;
+  --surface-raised: #fffefd;
+  --surface-sunk: #e4eaf5;
+  --ink: #26364d;
+  --ink-dim: #53637d;
   --ink-on-accent: #fffdf7;
-  --accent: #286b55;
-  --accent-dim: #1c5140;
-  --line: #c6d7cb;
-  --good: #286b55;
+  --accent: #4264a8;
+  --accent-dim: #304c87;
+  --line: #c9d4e6;
+  --good: #326c58;
   --warn: #a33042;
   --font-ui: ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, sans-serif;
   --font-display: var(--font-ui);
   --font-mono: ui-monospace, monospace;
   --radius: 22px;
-  --shadow: 0 8px 28px rgb(30 62 45 / 0.08);
-  --shadow-pressed: 0 2px 8px rgb(30 62 45 / 0.05);
+  --shadow: 0 8px 28px rgb(38 54 77 / 0.08);
+  --shadow-pressed: 0 2px 8px rgb(38 54 77 / 0.05);
+  --cat-backdrop: #f2d9b6;
+  --dog-backdrop: #c7e0ef;
   --mark-heart: #b44966;
   /* Keep region identities vivid in both themes. Numbers and boundaries are
      still needed: colour separation is not a colour-blindness guarantee. */
-  --region-0: #ef6865;
-  --region-1: #49a5e7;
-  --region-2: #ac70d9;
-  --region-3: #55b970;
-  --region-4: #f2c341;
-  --region-5: #e78c37;
-  --region-6: #35bbb3;
-  --region-7: #26d926;
-  --region-8: #e05299;
-  --region-9: #99cc33;
-  --region-10: #d29779;
-  --region-11: #998833;
-  --region-12: #e052e0;
-  --region-13: #29a329;
-  --region-14: #d27988;
-  --region-15: #7082db;
-  --grid-line: #15221e;
-  --grid-soft: #15221e55;
-  --cross-ink: #15221e;
+  --region-0: #d56a65;
+  --region-1: #479ecd;
+  --region-2: #a378ce;
+  --region-3: #4fb779;
+  --region-4: #caae3d;
+  --region-5: #ca833d;
+  --region-6: #39b4ae;
+  --region-7: #a0bd49;
+  --region-8: #d86fa3;
+  --region-9: #add18f;
+  --region-10: #ce9678;
+  --region-11: #46a53b;
+  --region-12: #d565ca;
+  --region-13: #98c9d5;
+  --region-14: #df9aab;
+  --region-15: #9ea1dc;
+  --grid-line: #152332;
+  --grid-soft: #15233255;
+  --cross-ink: #152332;
   --cross-face: #fffdf7;
   --cell-glow: #fff6;
 }
 :root[data-theme="night"] {
-  --surface: #172924;
-  --surface-raised: #20362e;
-  --surface-sunk: #14241e;
-  --ink: #f2f5e8;
-  --ink-dim: #b6cdbf;
-  --ink-on-accent: #15261f;
-  --accent: #a7d7b9;
-  --accent-dim: #c0e4cc;
-  --line: #456151;
+  --surface: #1d2638;
+  --surface-raised: #29354b;
+  --surface-sunk: #172031;
+  --ink: #f2f5fc;
+  --ink-dim: #b9c7df;
+  --ink-on-accent: #1c2940;
+  --accent: #a9c4f5;
+  --accent-dim: #c2d5f8;
+  --line: #465b7b;
   --good: #a7d7b9;
+  --cat-backdrop: #594736;
+  --dog-backdrop: #304d66;
   --warn: #f2a5b5;
   --font-ui: ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, sans-serif;
   --font-display: var(--font-ui);
@@ -169,7 +173,11 @@ main {
   flex-direction: column;
 }
 main.home {
-  --home-pet-size: clamp(96px, calc(100dvh - 650px), 164px);
+  --home-pet-size: clamp(
+    84px,
+    min(calc(100dvh - 674px), calc((100vw - 72px) / 2)),
+    150px
+  );
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -177,7 +185,7 @@ main.home {
   flex-shrink: 0;
 }
 .home .pet-pair {
-  height: var(--home-pet-size);
+  height: calc(var(--home-pet-size) + 24px);
   margin-bottom: 8px;
 }
 .home .pet-bubble {
@@ -236,6 +244,7 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 28px;
   margin-bottom: 20px;
 }
 .pet-bubble {
@@ -247,20 +256,20 @@ h2 {
   background: var(--surface-raised);
   border-radius: 45% 46% 42% 48%;
   box-shadow: var(--shadow);
+  flex-shrink: 0;
 }
 .cat-bubble {
-  transform: rotate(-9deg);
-  margin-right: -14px;
+  background: var(--cat-backdrop);
 }
 .dog-bubble {
-  transform: rotate(9deg);
-  margin-top: 20px;
+  background: var(--dog-backdrop);
 }
 .little-cross {
   position: absolute;
-  left: 48%;
-  top: 0;
-  font-size: 38px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
   color: var(--accent);
   font-weight: 300;
 }

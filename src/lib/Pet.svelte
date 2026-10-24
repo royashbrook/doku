@@ -20,6 +20,11 @@
     large?: boolean;
     identity?: number;
   } = $props();
+  // Offset by identity and species so even the two default home pets have different habits.
+  const personality = $derived(
+    Math.abs(Math.trunc(identity)) * 37 + (skin === "poodles" ? 13 : 0),
+  );
+  const habit = $derived(["peek", "nod", "listen", "settle"][personality % 4]);
   let paused = $state(false);
   onMount(() => {
     const visibility = () => (paused = document.hidden);
@@ -35,7 +40,8 @@
   class="pet"
   data-pet={skin}
   data-face={identity % 4}
-  style={`--face:${identity % 4};--glance-duration:${8 + (identity % 3)}s;--glance-delay:${-((identity * 1.7) % 8)}s`}
+  data-habit={habit}
+  style={`--face:${identity % 4};--glance-duration:${9.1 + (personality % 17) * 0.43}s;--glance-delay:${-((personality * 1.31) % 11)}s;--idle-duration:${12.7 + (personality % 23) * 0.61}s;--idle-delay:${-((personality * 2.17) % 19)}s;--glance-direction:${personality % 2 ? "reverse" : "normal"}`}
   aria-hidden="true"
 >
   <span class="pet-face">
@@ -69,8 +75,17 @@
     height: 100%;
     overflow: hidden;
     transform-origin: 50% 85%;
-    animation: pet-sway calc(var(--glance-duration) / 2.5) ease-in-out infinite;
-    animation-delay: var(--glance-delay);
+    animation: pet-peek var(--idle-duration) ease-in-out infinite;
+    animation-delay: var(--idle-delay);
+  }
+  .pet[data-habit="nod"] .pet-face {
+    animation-name: pet-nod;
+  }
+  .pet[data-habit="listen"] .pet-face {
+    animation-name: pet-listen;
+  }
+  .pet[data-habit="settle"] .pet-face {
+    animation-name: pet-settle;
   }
   img {
     position: absolute;
@@ -81,25 +96,70 @@
     max-width: none;
     animation: pet-glance var(--glance-duration) steps(1, end) infinite;
     animation-delay: var(--glance-delay);
+    animation-direction: var(--glance-direction);
   }
   .paused img,
   .paused .pet-face {
     animation-play-state: paused;
   }
-  /* A slow head tilt with a small bob, out of step from pet to pet. */
-  @keyframes pet-sway {
+  /* Most of each cycle is still. Short, different gestures feel less like a dance. */
+  @keyframes pet-peek {
     0%,
+    68%,
+    92%,
     100% {
-      transform: rotate(0) translateY(0);
+      transform: none;
     }
-    25% {
-      transform: rotate(-5deg) translateY(-1.5%);
+    76% {
+      transform: rotate(-5deg) translateY(-1%);
     }
-    50% {
-      transform: rotate(0) translateY(0);
+    84% {
+      transform: rotate(-3deg);
     }
-    75% {
-      transform: rotate(5deg) translateY(-1.5%);
+  }
+  @keyframes pet-nod {
+    0%,
+    72%,
+    94%,
+    100% {
+      transform: none;
+    }
+    79% {
+      transform: translateY(2%) scaleY(0.98);
+    }
+    86% {
+      transform: translateY(-1%);
+    }
+  }
+  @keyframes pet-listen {
+    0%,
+    60%,
+    95%,
+    100% {
+      transform: none;
+    }
+    70% {
+      transform: rotate(6deg) translateY(-2%);
+    }
+    81% {
+      transform: rotate(4deg);
+    }
+    89% {
+      transform: rotate(-2deg);
+    }
+  }
+  @keyframes pet-settle {
+    0%,
+    76%,
+    96%,
+    100% {
+      transform: none;
+    }
+    84% {
+      transform: translateY(1%) scale(1.015, 0.985);
+    }
+    91% {
+      transform: none;
     }
   }
   /* Frames are center, left, right, blink. Each pet keeps its own quiet rhythm. */
