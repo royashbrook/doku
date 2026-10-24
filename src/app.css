@@ -38,6 +38,7 @@
   --grid-line: #15221e;
   --grid-soft: #15221e55;
   --cross-ink: #15221e;
+  --cross-face: #fffdf7;
   --cell-glow: #fff6;
 }
 :root[data-theme="night"] {
@@ -479,13 +480,25 @@ nav button:hover {
   background: var(--region);
   color: var(--cross-ink);
   border-radius: 0;
+  overflow: hidden;
   touch-action: none;
+}
+/* A rounded tile inside each square: the corners outside it take a deeper
+   shade of the same colour, so squares read as tiles and regions stay whole. */
+.cell::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 24%;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--region) 72%, #000);
+  pointer-events: none;
 }
 .cell:hover {
   box-shadow: inset 0 0 0 2px var(--cell-glow);
 }
 .cell.pet-cell .pet {
-  animation: pet-in 0.22s ease-out;
+  position: relative;
+  animation: pet-in 0.42s cubic-bezier(0.3, 1.4, 0.5, 1);
 }
 .cell.bad {
   box-shadow: inset 0 0 0 3px var(--warn);
@@ -494,13 +507,18 @@ nav button:hover {
   box-shadow: inset 0 0 0 4px var(--accent);
   z-index: 1;
 }
-.cell .cross {
+/* A white X over a wider dark one: the dark edge carries the contrast on every colour. */
+.cell .cross,
+.cell .cross-edge {
   position: absolute;
   inset: 0;
   opacity: 1;
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.cell .cross {
+  color: var(--cross-face);
 }
 .cell .maybe {
   width: 70%;
@@ -891,14 +909,21 @@ textarea {
   font: 12px var(--font-mono);
   user-select: text;
 }
+/* Squash and stretch: a little hop in, a wobble, then still. */
 @keyframes pet-in {
-  from {
-    transform: scale(0.75) translateY(3px);
+  0% {
+    transform: scale(0.4) translateY(4px);
     opacity: 0.6;
   }
-  to {
-    transform: scale(1);
+  45% {
+    transform: scale(1.06, 0.92) translateY(0);
     opacity: 1;
+  }
+  70% {
+    transform: scale(0.95, 1.05) translateY(-2px);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
