@@ -59,6 +59,11 @@ for (const theme of ["day", "night"])
             stroke,
             cap: svg.getAttribute("stroke-linecap"),
             color: getComputedStyle(svg).color,
+            edge: getComputedStyle(cell.querySelector(".cross-edge")!).color,
+            edgeStroke: Number(
+              cell.querySelector(".cross-edge")!.getAttribute("stroke-width"),
+            ),
+            tile: getComputedStyle(cell, "::before").borderRadius,
             fill: getComputedStyle(cell).backgroundColor,
             owns:
               document
@@ -86,9 +91,17 @@ for (const theme of ["day", "night"])
         expect(mark.stroke).toBeGreaterThanOrEqual(3);
         expect(mark.cap).toBe("round");
         expect(mark.owns).toBe(true);
+        // A white X with a dark edge: the edge carries the contrast on every
+        // colour, and the white face stands out from its own edge.
+        expect(mark.edgeStroke).toBeGreaterThan(mark.stroke);
         expect(
-          (luminance(mark.fill) + 0.05) / (luminance(mark.color) + 0.05),
+          (luminance(mark.fill) + 0.05) / (luminance(mark.edge) + 0.05),
         ).toBeGreaterThanOrEqual(4.5);
+        expect(
+          (luminance(mark.color) + 0.05) / (luminance(mark.edge) + 0.05),
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(luminance(mark.color)).toBeGreaterThan(0.9);
+        expect(parseFloat(mark.tile)).toBeGreaterThan(0);
       }
       expect(
         await page.evaluate(
@@ -225,4 +238,24 @@ for (const theme of ["day", "night"])
       }),
     );
     expect(petClear).toBe(true);
+  });
+
+for (const motion of ["no-preference", "reduce"] as const)
+  test(`placed pets hop in and sway, and hold still for reduced motion (${motion})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: motion });
+    const index = boards.findIndex((board) => board.size === 5);
+    await page.goto(`/?puzzle=${index + 1}`);
+    await page.getByRole("button", { name: "place a pet", exact: true }).tap();
+    await page.locator(`#cell-${boards[index].solution[0]}`).tap();
+    const names = await page.locator(".pet-cell .pet").evaluate((pet) => ({
+      hop: getComputedStyle(pet).animationName,
+      sway: getComputedStyle(pet.querySelector(".pet-face")!).animationName,
+    }));
+    expect(names).toEqual(
+      motion === "reduce"
+        ? { hop: "none", sway: "none" }
+        : { hop: "pet-in", sway: expect.stringContaining("pet-sway") },
+    );
   });

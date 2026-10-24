@@ -451,6 +451,11 @@
                     skin={save.skin}
                     identity={index + region}
                   />{:else if cell === 1 || (save.autoCross && excluded.has(at))}<IconX
+                    class="cross-edge"
+                    size={18}
+                    viewBox="4 4 16 16"
+                    stroke={4}
+                  /><IconX
                     class="cross"
                     size={18}
                     viewBox="4 4 16 16"

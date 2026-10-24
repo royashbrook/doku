@@ -68,6 +68,9 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+    transform-origin: 50% 85%;
+    animation: pet-sway calc(var(--glance-duration) / 2.5) ease-in-out infinite;
+    animation-delay: var(--glance-delay);
   }
   img {
     position: absolute;
@@ -79,8 +82,25 @@
     animation: pet-glance var(--glance-duration) steps(1, end) infinite;
     animation-delay: var(--glance-delay);
   }
-  .paused img {
+  .paused img,
+  .paused .pet-face {
     animation-play-state: paused;
+  }
+  /* A slow head tilt with a small bob, out of step from pet to pet. */
+  @keyframes pet-sway {
+    0%,
+    100% {
+      transform: rotate(0) translateY(0);
+    }
+    25% {
+      transform: rotate(-5deg) translateY(-1.5%);
+    }
+    50% {
+      transform: rotate(0) translateY(0);
+    }
+    75% {
+      transform: rotate(5deg) translateY(-1.5%);
+    }
   }
   /* Frames are center, left, right, blink. Each pet keeps its own quiet rhythm. */
   @keyframes pet-glance {
@@ -109,7 +129,8 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    img {
+    img,
+    .pet-face {
       animation: none;
     }
   }

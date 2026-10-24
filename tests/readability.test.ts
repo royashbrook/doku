@@ -46,6 +46,13 @@ test("regions use vivid, separated colours, not near-white pastel fills", () => 
     }
 });
 
+test("the white cross face stands out from its dark edge", () => {
+  const face = css.match(/--cross-face: (#[a-f0-9]{6});/)![1];
+  const edge = css.match(/--cross-ink: (#[a-f0-9]{6});/)![1];
+  const values = [luminance(edge), luminance(face)].sort((a, b) => a - b);
+  assert.ok((values[1] + 0.05) / (values[0] + 0.05) >= 4.5);
+});
+
 test("cross ink and region borders remain high contrast on all sixteen colours", () => {
   for (const token of ["cross-ink", "grid-line"]) {
     const ink = css.match(new RegExp(`--${token}: (#[a-f0-9]{6});`))![1];
