@@ -36,6 +36,8 @@
       gesture = "rest";
     };
     const play = () => {
+      // Only one gesture owns the transform, even if timer and animation clocks differ.
+      animation?.cancel();
       const plan = nextGesture(Math.random, previous);
       previous = plan.name;
       gesture = plan.name;

@@ -54,11 +54,16 @@ test("pets choose independent multi-frame gestures and stop for hidden or reduce
   await page.locator(".board").evaluate((board) => {
     const pets = [...board.querySelectorAll(".pet")];
     const traces = pets.map(() => [] as string[]);
+    (window as unknown as { maxPetAnimations: number }).maxPetAnimations = 0;
     (window as unknown as { petTraces: string[][] }).petTraces = traces;
     const observer = new MutationObserver((changes) => {
       for (const change of changes) {
         const el = change.target as Element;
         const at = pets.indexOf(el);
+        const active =
+          el.querySelector(".pet-face")?.getAnimations().length ?? 0;
+        const probe = window as unknown as { maxPetAnimations: number };
+        probe.maxPetAnimations = Math.max(probe.maxPetAnimations, active);
         if (at >= 0)
           traces[at].push(
             el.getAttribute("data-gesture") +
@@ -78,6 +83,12 @@ test("pets choose independent multi-frame gestures and stop for hidden or reduce
     () => (window as unknown as { petTraces: string[][] }).petTraces,
   );
   expect(traces).toHaveLength(15);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { maxPetAnimations: number }).maxPetAnimations,
+    ),
+  ).toBeLessThanOrEqual(1);
   expect(new Set(traces.map((t) => t.join("|"))).size).toBeGreaterThanOrEqual(
     12,
   );
