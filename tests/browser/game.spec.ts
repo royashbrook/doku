@@ -7,7 +7,7 @@ test("direct play, real completion and a next puzzle", async ({ page }) => {
   await page.getByRole("button", { name: "let’s play" }).click();
   await expect(page.getByRole("group", { name: "5 by 5 board" })).toBeVisible();
   for (const at of boards[0].solution)
-    await page.locator(`#cell-${at}`).click();
+    await page.locator(`#cell-${at}`).dblclick();
   await expect(
     page.getByRole("heading", { name: "everyone’s home." }),
   ).toBeVisible();
@@ -19,7 +19,7 @@ test("undo, free hint, reset cancellation and reload preserve progress", async (
   page,
 }) => {
   await page.goto("/?puzzle=2");
-  await page.locator("#cell-" + boards[1].solution[0]).click();
+  await page.locator("#cell-" + boards[1].solution[0]).dblclick();
   await page.getByRole("button", { name: "reset", exact: true }).click();
   await page.getByRole("button", { name: "keep playing", exact: true }).click();
   await expect(page.locator(".pet-cell")).toHaveCount(1);
@@ -31,17 +31,16 @@ test("undo, free hint, reset cancellation and reload preserve progress", async (
   await page.getByRole("button", { name: "undo", exact: true }).click();
   await expect(page.locator(".pet-cell")).toHaveCount(1);
 });
-test("cross-out mode marks and clears squares without placing pets", async ({
+test("cross-out is the first tap and undo clears it without placing pets", async ({
   page,
 }) => {
   await page.goto("/?puzzle=1");
-  await page.getByRole("button", { name: "cross out", exact: true }).click();
   await page.locator("#cell-0").tap();
   await expect(page.locator("#cell-0")).toHaveAttribute(
     "aria-label",
     /crossed out/,
   );
-  await page.locator("#cell-0").tap();
+  await page.getByRole("button", { name: "undo", exact: true }).tap();
   await expect(page.locator("#cell-0")).toHaveAttribute("aria-label", /empty/);
   await expect(page.locator(".pet-cell")).toHaveCount(0);
 });
@@ -57,7 +56,7 @@ test("poodles and theme settings persist without changing the puzzle", async ({
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "night");
   await page.getByRole("button", { name: "let’s play" }).click();
-  await page.locator("#cell-" + boards[0].solution[0]).click();
+  await page.locator("#cell-" + boards[0].solution[0]).dblclick();
   await expect(page.locator(".pet-cell img")).toHaveAttribute(
     "src",
     "/poodles-motion.webp",
@@ -157,7 +156,7 @@ test("offline installed navigation and primary flow, including notices", async (
   await page.reload();
   await page.getByRole("button", { name: "let’s play" }).click();
   for (const at of boards[0].solution)
-    await page.locator(`#cell-${at}`).click();
+    await page.locator(`#cell-${at}`).dblclick();
   await expect(
     page.getByRole("heading", { name: "everyone’s home." }),
   ).toBeVisible();
@@ -203,7 +202,7 @@ test("reduced motion disables pet entrance, glances and blinks", async ({
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/?puzzle=1");
-  await page.locator("#cell-0").click();
+  await page.locator("#cell-0").dblclick();
   expect(
     await page
       .locator(".pet-cell img")
@@ -226,7 +225,7 @@ test("pet identities survive reload and skin changes, with visible glance and bl
   await page.clock.install();
   await page.goto("/?puzzle=1");
   for (const at of boards[0].solution.slice(0, 4))
-    await page.locator(`#cell-${at}`).tap();
+    await page.locator(`#cell-${at}`).dblclick();
   const pets = page.locator(".pet-cell .pet");
   const identities = await pets.evaluateAll((elements) =>
     elements.map((pet) => pet.getAttribute("data-face")),
@@ -312,7 +311,7 @@ test("visibility handler pauses and resumes decorative faces", async ({
   page,
 }) => {
   await page.goto("/?puzzle=1");
-  await page.locator("#cell-0").tap();
+  await page.locator("#cell-0").dblclick();
   const image = page.locator(".pet-cell img");
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", {
@@ -374,7 +373,8 @@ test("every pet surface clips one full-size face, including compact home and loo
   await assertFrames(".how-pet .pet");
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByRole("button", { name: "play", exact: true }).click();
-  for (const at of boards[0].solution) await page.locator(`#cell-${at}`).tap();
+  for (const at of boards[0].solution)
+    await page.locator(`#cell-${at}`).dblclick();
   await assertFrames(".win-pets .pet");
   const payoff = await page.locator(".win").evaluate((panel) => {
     const box = panel.getBoundingClientRect();
@@ -395,7 +395,7 @@ test("the color row shows each region's pet once it is placed", async ({
   await expect(row.locator(".pet")).toHaveCount(0);
   const at = boards[index].solution[0];
   const region = boards[index].regions[at];
-  await page.locator(`#cell-${at}`).click();
+  await page.locator(`#cell-${at}`).dblclick();
   await expect(row.locator(".pet")).toHaveCount(1);
   await expect(row.nth(region)).toHaveAttribute("aria-label", /: cat$/);
   await expect(row.nth(region).locator(".pet")).toHaveCount(1);
@@ -441,10 +441,7 @@ test("maybe marks a square with a question, without counting as a pet", async ({
   page,
 }) => {
   await page.goto("/?puzzle=1");
-  await page.getByRole("button", { name: "maybe", exact: true }).click();
-  await expect(
-    page.getByText("tap or slide to mark squares you are not sure about."),
-  ).toBeVisible();
+  await page.locator("#cell-0").dblclick();
   await page.locator("#cell-0").click();
   await expect(page.locator("#cell-0")).toHaveAttribute("aria-label", /maybe$/);
   await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
@@ -452,22 +449,22 @@ test("maybe marks a square with a question, without counting as a pet", async ({
   await expect(page.locator(".crossed")).toHaveCount(0);
   await page.reload();
   await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
-  await page.getByRole("button", { name: "maybe", exact: true }).click();
   await page.locator("#cell-0").click();
   await expect(page.locator("#cell-0")).toHaveAttribute("aria-label", /empty$/);
   await page.locator("#cell-0").click();
-  await page.getByRole("button", { name: "place a pet", exact: true }).click();
   await page.locator("#cell-0").click();
   await expect(page.locator("#cell-0")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#cell-0 .maybe")).toHaveCount(0);
   await page.getByRole("button", { name: "undo", exact: true }).click();
-  await expect(page.locator("#cell-0 .maybe")).toHaveCount(1);
+  await expect(page.locator("#cell-0")).toHaveAttribute(
+    "aria-label",
+    /crossed out$/,
+  );
 });
-test("maybe slides across a row like cross out, and slides back off", async ({
+test("sliding crosses a row and slides back off without placing pets or maybes", async ({
   page,
 }) => {
   await page.goto("/?puzzle=1");
-  await page.getByRole("button", { name: "maybe", exact: true }).click();
   const centre = async (at: number) => {
     const box = (await page.locator(`#cell-${at}`).boundingBox())!;
     return [box.x + box.width / 2, box.y + box.height / 2] as const;
@@ -483,7 +480,7 @@ test("maybe slides across a row like cross out, and slides back off", async ({
   for (let at = 0; at <= 4; at++)
     await expect(page.locator(`#cell-${at}`)).toHaveAttribute(
       "aria-label",
-      /maybe$/,
+      /crossed out$/,
     );
   await expect(page.locator(".pet-cell")).toHaveCount(0);
   await slide(0, 4);
@@ -533,13 +530,13 @@ test("both face sheets are decoded once at startup, not per placed pet", async (
     { path: "/poodles-motion.webp", connected: false },
   ];
   await expect.poll(decodes).toEqual(startup);
-  await page.locator("#cell-" + boards[0].solution[0]).click();
+  await page.locator("#cell-" + boards[0].solution[0]).dblclick();
   await expect(page.locator(".pet-cell img")).toHaveCount(1);
   expect(await decodes()).toEqual(startup);
 });
 test("placed pet images ask for synchronous decoding", async ({ page }) => {
   await page.goto("/?puzzle=1");
-  await page.locator("#cell-" + boards[0].solution[0]).click();
+  await page.locator("#cell-" + boards[0].solution[0]).dblclick();
   await expect(page.locator(".pet-cell img")).toHaveAttribute(
     "decoding",
     "sync",

@@ -59,7 +59,8 @@ test("completion has a viewport-centered dialog and inert page navigation", asyn
 }) => {
   await page.setViewportSize({ width: 420, height: 760 });
   await page.goto("/?puzzle=1");
-  for (const at of boards[0].solution) await page.locator(`#cell-${at}`).tap();
+  for (const at of boards[0].solution)
+    await page.locator(`#cell-${at}`).dblclick();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("everyone’s home.");
@@ -74,7 +75,6 @@ test("crosses use most of a square with rounded chunky strokes", async ({
   page,
 }) => {
   await page.goto("/?puzzle=1");
-  await page.getByRole("button", { name: "cross out", exact: true }).tap();
   await page.locator("#cell-0").tap();
   const mark = await page.locator("#cell-0 .cross").evaluate((el) => ({
     ratio:
@@ -121,6 +121,7 @@ test("9 through 12 remain directly selectable, playable and saved", async ({
       expect(cell.color).not.toBe("rgba(0, 0, 0, 0)");
       expect(cell.owns).toBe(true);
     }
+    await page.locator(`#cell-${boards[at].solution[0]}`).tap();
     await page.locator(`#cell-${boards[at].solution[0]}`).tap();
     await page.reload();
     await page.getByRole("button", { name: "keep playing" }).tap();

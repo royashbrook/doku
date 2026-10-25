@@ -468,14 +468,12 @@ nav button:hover {
   align-items: center;
   justify-content: center;
   position: relative;
-  border-style: solid;
-  /* Transparent borders keep the full tap boxes while exposing canvas gaps.
-     Wider region boundaries use the same empty space, not another outline. */
-  border-color: transparent;
+  /* Equal transparent edges leave the tap grid intact without stepped region rims. */
+  border: 1px solid transparent;
   background: var(--region);
   background-clip: padding-box;
   color: var(--cross-ink);
-  border-radius: 4px;
+  border-radius: 1px;
   overflow: hidden;
   touch-action: none;
 }
@@ -503,10 +501,21 @@ nav button:hover {
 .cell .cross {
   color: var(--cross-face);
 }
-.cell .maybe {
-  width: 70%;
-  height: 70%;
+.cell .maybe,
+.cell .maybe-edge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+  height: 82%;
   pointer-events: none;
+}
+.cell .maybe {
+  color: var(--cross-face);
+}
+.cell .maybe-edge {
+  color: var(--cross-ink);
 }
 .region-label {
   position: absolute;
@@ -526,33 +535,6 @@ nav button:hover {
 }
 .pet-cell .region-label {
   display: none;
-}
-.mode-picker {
-  display: flex;
-  border-radius: var(--radius);
-  background: var(--surface-sunk);
-  padding: 4px;
-  margin: 16px auto 0;
-  max-width: 390px;
-  width: 100%;
-}
-.mode-picker button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  flex: 1;
-  min-height: 44px;
-  background: none;
-  border-radius: calc(var(--radius) - 5px);
-  color: var(--ink-dim);
-  font-size: 15px;
-  font-weight: 700;
-}
-.mode-picker button.active {
-  background: var(--surface-raised);
-  color: var(--accent);
-  box-shadow: var(--shadow-pressed);
 }
 .hint-line {
   min-height: 62px;
@@ -919,13 +901,6 @@ textarea {
   }
 }
 @media (max-width: 399px) {
-  .mode-picker button {
-    /* Size to the labels, and shrink (wrapping a label) only when a wide font has no room. */
-    flex: 1 1 auto;
-    min-width: 0;
-    gap: 5px;
-    font-size: 14px;
-  }
   .app {
     padding-left: 4px;
     padding-right: 4px;
@@ -997,9 +972,6 @@ textarea {
   .home-links {
     padding-bottom: 8px;
   }
-  .mode-picker {
-    margin-top: 10px;
-  }
   .hint-line {
     min-height: 48px;
   }
@@ -1050,10 +1022,6 @@ textarea {
   .board-wrap {
     grid-column: 1;
     grid-row: 2 / 5;
-  }
-  .mode-picker {
-    grid-column: 2;
-    flex-direction: column;
   }
   .hint-line,
   .game-tools {
