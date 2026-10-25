@@ -7,6 +7,8 @@ One pet in each row, column and color region. Pets cannot touch, even diagonally
 The previous 192 puzzles keep their indices; 16 puzzles accompany each larger size.
 Cat and poodle skins, daylight and evening themes, undo, free hints, optional
 region numbers, progress export/import, and a daily selection from the same pool.
+Tap cycles cross-out, pet, maybe, then empty. Slide to paint or erase crosses.
+Sliding does not move placed pets.
 
 Play: [doku.royashbrook.com](https://doku.royashbrook.com).
 

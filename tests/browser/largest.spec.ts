@@ -48,6 +48,7 @@ for (const size of [13, 14, 15, 16]) {
     }
     const first = boards[index].solution[0];
     await page.locator(`#cell-${first}`).tap();
+    await page.locator(`#cell-${first}`).tap();
     await page.reload();
     await page.getByRole("button", { name: "keep playing" }).tap();
     await expect(page.locator(`#cell-${first}`)).toHaveAttribute(
@@ -59,6 +60,7 @@ for (const size of [13, 14, 15, 16]) {
     const pointed = await page.locator(".hinted").getAttribute("data-cell");
     expect(boards[index].solution).toContain(Number(pointed));
     await page.locator(`#cell-${pointed}`).tap();
+    await page.locator(`#cell-${pointed}`).tap();
     await expect(page.locator(".pet-cell")).toHaveCount(2);
   });
 }
@@ -66,7 +68,7 @@ for (const size of [13, 14, 15, 16]) {
 test("16 square board completes and returns to size selection", async ({
   page,
 }) => {
-  // The hosted WebKit trace spent 1.2–2.2s per native tap. This 16-tap
+  // The hosted WebKit trace spent 1.2–2.2s per action. This 16-pet
   // journey needs its own budget, without permitting an individual stalled action.
   test.setTimeout(60_000);
   page.setDefaultTimeout(5_000);
@@ -97,7 +99,6 @@ test("16 square board completes and returns to size selection", async ({
       !boards[index].solution.includes(at) &&
       !boards[index].solution.includes(at + 1),
   );
-  await page.getByRole("button", { name: "cross out", exact: true }).tap();
   const from = (await page.locator(`#cell-${start}`).boundingBox())!;
   const to = (await page.locator(`#cell-${start + 1}`).boundingBox())!;
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
@@ -109,9 +110,8 @@ test("16 square board completes and returns to size selection", async ({
       "aria-label",
       /crossed out/,
     );
-  await page.getByRole("button", { name: "place a pet", exact: true }).tap();
   for (const at of boards[index].solution)
-    await page.locator(`#cell-${at}`).tap();
+    await page.locator(`#cell-${at}`).dblclick();
   await expect(page.locator(".pet-cell img").first()).toHaveAttribute(
     "src",
     "/poodles-motion.webp",

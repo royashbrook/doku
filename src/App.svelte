@@ -38,13 +38,19 @@
   let index = $state(loaded.save.current),
     cells = $state<Cell[]>([]),
     history = $state<Cell[][]>([]);
-  let mode = $state<"pet" | "cross" | "maybe">("pet"),
-    clue = $state<Hint | null>(null),
+  let clue = $state<Hint | null>(null),
     message = $state("");
   let daily = $state(false),
-    finished = $state(false),
-    drag = false,
-    dragValue: Cell = 1;
+    finished = $state(false);
+  let drag: {
+    pointer: number;
+    start: number;
+    x: number;
+    y: number;
+    drawing: boolean;
+    value: Cell;
+    board: HTMLElement;
+  } | null = null;
   let panel = $state(""),
     dialog: HTMLDialogElement,
     transfer = $state(""),
@@ -108,10 +114,8 @@
     persist();
     if (finished) panel = "win";
   }
-  function tap(at: number, detail: number) {
-    if (mode === "cross") edit(at, detail >= 2 ? 2 : cells[at] === 1 ? 0 : 1);
-    else if (mode === "maybe") edit(at, cells[at] === 3 ? 0 : 3);
-    else edit(at, cells[at] === 2 ? 0 : 2);
+  function tap(at: number) {
+    edit(at, ((cells[at] + 1) % 4) as Cell);
   }
   function undo() {
     const previous = history.at(-1);
@@ -229,23 +233,60 @@
     }
   }
   function startDrag(event: PointerEvent, at: number) {
-    if (
-      mode === "pet" ||
-      (event.pointerType === "mouse" && event.button !== 0)
-    )
-      return;
+    if (!event.isPrimary || event.button !== 0 || drag) return;
     event.preventDefault();
-    drag = true;
-    const mark = mode === "cross" ? 1 : 3;
-    dragValue = cells[at] === mark ? 0 : mark;
-    edit(at, dragValue);
+    const button = event.currentTarget as HTMLElement;
+    button.setPointerCapture(event.pointerId);
+    drag = {
+      pointer: event.pointerId,
+      start: at,
+      x: event.clientX,
+      y: event.clientY,
+      drawing: false,
+      value: cells[at] === 1 ? 0 : 1,
+      board: button.closest<HTMLElement>(".board")!,
+    };
   }
   function dragMove(event: PointerEvent) {
-    if (!drag) return;
-    const element = document
+    if (!drag || drag.pointer !== event.pointerId) return;
+    const dx = event.clientX - drag.x,
+      dy = event.clientY - drag.y;
+    // Native move events can skip squares during a fast swipe.
+    const steps = Math.ceil(
+      Math.max(Math.abs(dx), Math.abs(dy)) /
+        (drag.board.getBoundingClientRect().width / puzzle.size / 2),
+    );
+    for (let step = 1; step <= steps; step++) {
+      const element = document
+        .elementFromPoint(
+          drag.x + (dx * step) / steps,
+          drag.y + (dy * step) / steps,
+        )
+        ?.closest<HTMLElement>("[data-cell]");
+      if (!element || !drag.board.contains(element)) continue;
+      const at = Number(element.dataset.cell);
+      if (!drag.drawing && at !== drag.start) {
+        drag.drawing = true;
+        if (cells[drag.start] !== 2) edit(drag.start, drag.value);
+      }
+      if (drag.drawing && cells[at] !== 2) edit(at, drag.value);
+    }
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+  }
+  function finishDrag(event: PointerEvent) {
+    if (!drag || drag.pointer !== event.pointerId) return;
+    dragMove(event);
+    const stroke = drag;
+    drag = null;
+    const released = document
       .elementFromPoint(event.clientX, event.clientY)
       ?.closest<HTMLElement>("[data-cell]");
-    if (element) edit(Number(element.dataset.cell), dragValue);
+    if (!stroke.drawing && released?.dataset.cell === String(stroke.start))
+      tap(stroke.start);
+  }
+  function cancelDrag(event: PointerEvent) {
+    if (drag?.pointer === event.pointerId) drag = null;
   }
   function modalKeys(event: KeyboardEvent) {
     if (event.key !== "Tab") return;
@@ -286,15 +327,17 @@
     )
       play(requested - 1);
     const stopDrag = () => {
-      drag = false;
+      drag = null;
     };
-    window.addEventListener("pointerup", stopDrag);
-    window.addEventListener("pointercancel", stopDrag);
+    window.addEventListener("pointerup", finishDrag);
+    window.addEventListener("pointercancel", cancelDrag);
+    window.addEventListener("blur", stopDrag);
     window.addEventListener("pagehide", persist);
     return () => {
       updater?.destroy();
-      window.removeEventListener("pointerup", stopDrag);
-      window.removeEventListener("pointercancel", stopDrag);
+      window.removeEventListener("pointerup", finishDrag);
+      window.removeEventListener("pointercancel", cancelDrag);
+      window.removeEventListener("blur", stopDrag);
       window.removeEventListener("pagehide", persist);
     };
   });
@@ -433,24 +476,25 @@
                 class="cell"
                 class:pet-cell={cell === 2}
                 class:crossed={cell === 1 ||
-                  (save.autoCross && excluded.has(at))}
+                  (cell === 0 && save.autoCross && excluded.has(at))}
                 class:bad={conflictCells.has(at)}
                 class:hinted={clue?.index === at}
-                style={`--region:var(--region-${region});border-top-width:${row === 0 || puzzle.regions[at - puzzle.size] !== region ? 2 : 0.5}px;border-left-width:${col === 0 || puzzle.regions[at - 1] !== region ? 2 : 0.5}px;border-bottom-width:${row === puzzle.size - 1 ? 2 : 0.5}px;border-right-width:${col === puzzle.size - 1 ? 2 : 0.5}px`}
-                aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : cell === 3 ? "maybe" : "empty"}`}
+                style={`--region:var(--region-${region})`}
+                aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : cell === 3 ? "maybe" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : "empty"}`}
                 aria-pressed={cell === 2}
                 disabled={finished}
                 onclick={(event) => {
-                  if (mode === "pet" || event.detail === 0)
-                    tap(at, event.detail);
+                  // Pointer gestures finish on release. Keyboard and assistive clicks have no pointer.
+                  if (event.detail === 0) tap(at);
                 }}
                 onpointerdown={(event) => startDrag(event, at)}
+                onlostpointercapture={cancelDrag}
                 onkeydown={(event) => keys(event, at)}
               >
                 {#if cell === 2}<Pet
                     skin={save.skin}
                     identity={index + region}
-                  />{:else if cell === 1 || (save.autoCross && excluded.has(at))}<IconX
+                  />{:else if cell === 1 || (cell === 0 && save.autoCross && excluded.has(at))}<IconX
                     class="cross-edge"
                     size={18}
                     viewBox="4 4 16 16"
@@ -461,43 +505,21 @@
                     viewBox="4 4 16 16"
                     stroke={3}
                   />{:else if cell === 3}<IconQuestionMark
-                    class="maybe"
+                    class="maybe-edge"
                     size={18}
-                    stroke={3}
-                  />{/if}
+                    stroke={4}
+                  /><IconQuestionMark class="maybe" size={18} stroke={3} />{/if}
                 {#if save.labels}<span class="region-label">{region + 1}</span
                   >{/if}
               </button>
             {/each}
           </div>
         </div>
-        <div class="mode-picker" aria-label="Placement mode">
-          <button
-            class:active={mode === "pet"}
-            aria-pressed={mode === "pet"}
-            onclick={() => (mode = "pet")}
-            ><IconPaw size={22} />place a pet</button
-          ><button
-            class:active={mode === "cross"}
-            aria-pressed={mode === "cross"}
-            onclick={() => (mode = "cross")}
-            ><IconX size={22} />cross out</button
-          ><button
-            class:active={mode === "maybe"}
-            aria-pressed={mode === "maybe"}
-            onclick={() => (mode = "maybe")}
-            ><IconQuestionMark size={22} />maybe</button
-          >
-        </div>
         <div class="hint-line" aria-live="polite">
           {#if clue}<p>{clue.text}</p>{:else if message}<p>
               {message}
             </p>{:else}<p>
-              {mode === "pet"
-                ? "tap a square to place a pet. tap again to lift it."
-                : mode === "cross"
-                  ? "tap or slide to cross out squares."
-                  : "tap or slide to mark squares you are not sure about."}
+              tap: cross, pet, maybe, clear. slide to cross out.
             </p>{/if}
         </div>
         <div class="game-tools">
@@ -625,8 +647,9 @@
       </li>
     </ol>
     <p>
-      Tap to place a pet. Choose cross out to mark squares you’ve ruled out. Choose maybe to mark squares you’re not sure about.
-      Undo and hints are always free.
+      Tap once to cross out, again for a pet, again for maybe, and again to
+      clear. Slide across squares to cross them out. Start on a cross to erase
+      crosses. Sliding leaves placed pets alone. Undo and hints are always free.
     </p>
     <button class="primary" onclick={() => (panel = "")}
       >got it <IconCheck size={20} /></button

@@ -26,12 +26,9 @@ for (const theme of ["day", "night"])
       );
       const index = boards.findIndex((board) => board.size === size);
       await page.goto(`/?puzzle=${index + 1}`);
-      await page.getByRole("button", { name: "cross out", exact: true }).tap();
       const manual = boards[index].solution.includes(0) ? 1 : 0;
       await page.locator(`#cell-${manual}`).tap();
-      await page
-        .getByRole("button", { name: "place a pet", exact: true })
-        .tap();
+      await page.locator(`#cell-${boards[index].solution[0]}`).tap();
       await page.locator(`#cell-${boards[index].solution[0]}`).tap();
       await expect(page.locator(".cross")).not.toHaveCount(0);
       const marks = await page.locator(".cell .cross").evaluateAll((els) =>
@@ -135,10 +132,9 @@ for (const theme of ["day", "night"])
     );
     const index = boards.findIndex((board) => board.size === 16);
     await page.goto(`/?puzzle=${index + 1}`);
-    await page.getByRole("button", { name: "cross out", exact: true }).tap();
     const manual = boards[index].solution.includes(0) ? 1 : 0;
     await page.locator(`#cell-${manual}`).tap();
-    await page.getByRole("button", { name: "place a pet", exact: true }).tap();
+    await page.locator(`#cell-${boards[index].solution[0]}`).tap();
     await page.locator(`#cell-${boards[index].solution[0]}`).tap();
     const labels = await page
       .locator(".crossed .region-label")
@@ -247,7 +243,7 @@ for (const motion of ["no-preference", "reduce"] as const)
     await page.emulateMedia({ reducedMotion: motion });
     const index = boards.findIndex((board) => board.size === 5);
     await page.goto(`/?puzzle=${index + 1}`);
-    await page.getByRole("button", { name: "place a pet", exact: true }).tap();
+    await page.locator(`#cell-${boards[index].solution[0]}`).tap();
     await page.locator(`#cell-${boards[index].solution[0]}`).tap();
     const names = await page.locator(".pet-cell .pet").evaluate((pet) => ({
       hop: getComputedStyle(pet).animationName,

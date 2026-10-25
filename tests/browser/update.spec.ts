@@ -64,7 +64,7 @@ test("native A-to-B update needs consent, retains a held client, and rejects a b
     const page = await context.newPage();
     await page.goto(origin + "/?puzzle=1");
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-    await page.locator("#cell-0").click();
+    await page.locator("#cell-0").dblclick();
     const held = await context.newPage();
     await held.goto(origin + "/?puzzle=1");
     await held.waitForFunction(() => !!navigator.serviceWorker.controller);

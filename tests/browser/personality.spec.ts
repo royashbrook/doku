@@ -47,7 +47,7 @@ test("pets choose independent multi-frame gestures and stop for hidden or reduce
   const i = boards.findIndex((b) => b.size === 16);
   await page.goto(`/?puzzle=${i + 1}`);
   for (const at of boards[i].solution.slice(0, 15))
-    await page.locator(`#cell-${at}`).tap();
+    await page.locator(`#cell-${at}`).dblclick();
   const faces = await page
     .locator(".pet-cell .pet")
     .evaluateAll((els) => els.map((el) => el.getAttribute("data-face")));
@@ -212,12 +212,7 @@ for (const theme of ["day", "night"])
               style.borderBottomWidth,
               style.borderLeftWidth,
             ].map(parseFloat),
-            declaredWidths: [
-              (el as HTMLElement).style.borderTopWidth,
-              (el as HTMLElement).style.borderRightWidth,
-              (el as HTMLElement).style.borderBottomWidth,
-              (el as HTMLElement).style.borderLeftWidth,
-            ].map(parseFloat),
+            radius: parseFloat(style.borderRadius),
             color: style.backgroundColor,
             width: r.width,
             owns:
@@ -228,14 +223,10 @@ for (const theme of ["day", "night"])
         }),
       );
       expect(tiles).toHaveLength(size * size);
-      expect(tiles.some((t) => t.widths.some((w) => w >= 2))).toBe(true);
-      expect(tiles.some((t) => t.widths.some((w) => w > 0 && w < 2))).toBe(
-        true,
-      );
-      expect(tiles.some((t) => t.declaredWidths.some((w) => w === 0.5))).toBe(
-        true,
-      );
       for (const tile of tiles) {
+        expect(tile.widths).toEqual([1, 1, 1, 1]);
+        expect(tile.radius).toBeGreaterThan(0);
+        expect(tile.radius).toBeLessThanOrEqual(1);
         expect(tile.before).toBe("none");
         expect(tile.shadow).toBe("none");
         expect(tile.clip).toBe("padding-box");
