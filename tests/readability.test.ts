@@ -79,15 +79,13 @@ test("the installed shell uses the refreshed day surface without changing identi
   );
 });
 
-test("cross ink and region borders remain high contrast on all sixteen colours", () => {
-  for (const token of ["cross-ink", "grid-line"]) {
-    const ink = css.match(new RegExp(`--${token}: (#[a-f0-9]{6});`))![1];
-    for (const fill of palette) {
-      const values = [luminance(ink), luminance(fill)].sort((a, b) => a - b);
-      assert.ok(
-        (values[1] + 0.05) / (values[0] + 0.05) >= 4.5,
-        `${token} on ${fill}`,
-      );
-    }
+test("cross ink remains high contrast on all sixteen colours", () => {
+  const ink = css.match(/--cross-ink: (#[a-f0-9]{6});/)![1];
+  for (const fill of palette) {
+    const values = [luminance(ink), luminance(fill)].sort((a, b) => a - b);
+    assert.ok(
+      (values[1] + 0.05) / (values[0] + 0.05) >= 4.5,
+      `cross ink on ${fill}`,
+    );
   }
 });

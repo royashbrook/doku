@@ -150,39 +150,101 @@ test("pets choose independent multi-frame gestures and stop for hidden or reduce
   ).toEqual(faces);
 });
 
-for (const size of [5, 8, 12, 16])
-  test(`thin tile gutters preserve region boundaries and hit ownership on ${size}`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 360, height: 640 });
-    const i = boards.findIndex((b) => b.size === size);
-    await page.goto(`/?puzzle=${i + 1}`);
-    const tiles = await page.locator(".cell").evaluateAll((els) =>
-      els.map((el) => {
-        const style = getComputedStyle(el),
-          gap = getComputedStyle(el, "::before"),
-          r = el.getBoundingClientRect();
-        return {
-          gap: gap.boxShadow,
-          inset: parseFloat(gap.top),
-          color: style.backgroundColor,
-          border: parseFloat(style.borderLeftWidth),
-          owns:
-            document
-              .elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
-              ?.closest(".cell") === el,
-          width: r.width,
-        };
-      }),
-    );
-    expect(tiles).toHaveLength(size * size);
-    expect(tiles.some((t) => t.border >= 2)).toBe(true);
-    for (const tile of tiles) {
-      expect(tile.inset).toBeGreaterThan(0);
-      expect(tile.inset).toBeLessThanOrEqual(1);
-      expect(tile.gap).toContain("255, 254, 253");
-      expect(tile.color).not.toBe("rgba(0, 0, 0, 0)");
-      expect(tile.owns).toBe(true);
-      expect(tile.width).toBeGreaterThan(15);
-    }
-  });
+for (const theme of ["day", "night"])
+  for (const size of [5, 8, 12, 16])
+    test(`flat tile spacing uses the page canvas without outlines on ${size} in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 360, height: 640 });
+      await page.addInitScript(
+        (theme) =>
+          localStorage.setItem(
+            "doku.save.v1",
+            JSON.stringify({
+              schema: 1,
+              skin: "cats",
+              theme,
+              labels: false,
+              autoCross: true,
+              completed: [],
+              current: 0,
+              boards: {},
+            }),
+          ),
+        theme,
+      );
+      const i = boards.findIndex((b) => b.size === size);
+      await page.goto(`/?puzzle=${i + 1}`);
+      const canvas = await page.locator(".board").evaluate((el) => ({
+        color: getComputedStyle(el).backgroundColor,
+        page: getComputedStyle(document.body).backgroundColor,
+        shadow: getComputedStyle(el).boxShadow,
+        radius: getComputedStyle(el).borderRadius,
+      }));
+      expect(canvas.color).toBe(canvas.page);
+      expect(canvas.shadow).toBe("none");
+      expect(canvas.radius).toBe("0px");
+      expect(
+        await page
+          .locator(".region-row li")
+          .evaluateAll((els) =>
+            els.every((el) => getComputedStyle(el).boxShadow === "none"),
+          ),
+      ).toBe(true);
+      const tiles = await page.locator(".cell").evaluateAll((els) =>
+        els.map((el) => {
+          const style = getComputedStyle(el),
+            pseudo = getComputedStyle(el, "::before"),
+            r = el.getBoundingClientRect();
+          return {
+            before: pseudo.content,
+            shadow: style.boxShadow,
+            clip: style.backgroundClip,
+            borders: [
+              style.borderTopColor,
+              style.borderRightColor,
+              style.borderBottomColor,
+              style.borderLeftColor,
+            ],
+            widths: [
+              style.borderTopWidth,
+              style.borderRightWidth,
+              style.borderBottomWidth,
+              style.borderLeftWidth,
+            ].map(parseFloat),
+            declaredWidths: [
+              (el as HTMLElement).style.borderTopWidth,
+              (el as HTMLElement).style.borderRightWidth,
+              (el as HTMLElement).style.borderBottomWidth,
+              (el as HTMLElement).style.borderLeftWidth,
+            ].map(parseFloat),
+            color: style.backgroundColor,
+            width: r.width,
+            owns:
+              document
+                .elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+                ?.closest(".cell") === el,
+          };
+        }),
+      );
+      expect(tiles).toHaveLength(size * size);
+      expect(tiles.some((t) => t.widths.some((w) => w >= 2))).toBe(true);
+      expect(tiles.some((t) => t.widths.some((w) => w > 0 && w < 2))).toBe(
+        true,
+      );
+      expect(tiles.some((t) => t.declaredWidths.some((w) => w === 0.5))).toBe(
+        true,
+      );
+      for (const tile of tiles) {
+        expect(tile.before).toBe("none");
+        expect(tile.shadow).toBe("none");
+        expect(tile.clip).toBe("padding-box");
+        expect(
+          tile.borders.every((color) => color === "rgba(0, 0, 0, 0)"),
+        ).toBe(true);
+        expect(tile.color).not.toBe("rgba(0, 0, 0, 0)");
+        expect(tile.owns).toBe(true);
+        expect(tile.width).toBeGreaterThan(15);
+        if (size === 8) expect(tile.width).toBe(44);
+      }
+    });
