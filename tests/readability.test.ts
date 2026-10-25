@@ -53,6 +53,32 @@ test("the white cross face stands out from its dark edge", () => {
   assert.ok((values[1] + 0.05) / (values[0] + 0.05) >= 4.5);
 });
 
+test("region saturation stays colorful without the neon extremes", () => {
+  for (const hex of palette) {
+    const channels = rgb(hex),
+      high = Math.max(...channels),
+      low = Math.min(...channels);
+    const saturation = (high - low) / (1 - Math.abs(high + low - 1));
+    assert.ok(saturation <= 0.65, `${hex} is too intense`);
+  }
+});
+
+test("the installed shell uses the refreshed day surface without changing identity", () => {
+  const surface = css.match(/--surface: (#[a-f0-9]{6});/)![1];
+  const manifest = JSON.parse(
+    readFileSync("public/manifest.webmanifest", "utf8"),
+  );
+  assert.equal(manifest.theme_color, surface);
+  assert.equal(manifest.background_color, surface);
+  assert.equal(manifest.id, "/");
+  assert.equal(manifest.start_url, "/");
+  assert.ok(
+    readFileSync("index.html", "utf8").includes(
+      `name="theme-color" content="${surface}"`,
+    ),
+  );
+});
+
 test("cross ink and region borders remain high contrast on all sixteen colours", () => {
   for (const token of ["cross-ink", "grid-line"]) {
     const ink = css.match(new RegExp(`--${token}: (#[a-f0-9]{6});`))![1];

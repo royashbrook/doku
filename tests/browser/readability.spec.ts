@@ -241,7 +241,7 @@ for (const theme of ["day", "night"])
   });
 
 for (const motion of ["no-preference", "reduce"] as const)
-  test(`placed pets hop in and sway, and hold still for reduced motion (${motion})`, async ({
+  test(`placed pets hop in, use an idle habit, and hold still for reduced motion (${motion})`, async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: motion });
@@ -256,6 +256,9 @@ for (const motion of ["no-preference", "reduce"] as const)
     expect(names).toEqual(
       motion === "reduce"
         ? { hop: "none", sway: "none" }
-        : { hop: "pet-in", sway: expect.stringContaining("pet-sway") },
+        : {
+            hop: "pet-in",
+            sway: expect.stringMatching(/\bpet-(peek|nod|listen|settle)$/),
+          },
     );
   });
