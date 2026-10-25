@@ -68,6 +68,14 @@ test("native A-to-B update needs consent, retains a held client, and rejects a b
     const held = await context.newPage();
     await held.goto(origin + "/?puzzle=1");
     await held.waitForFunction(() => !!navigator.serviceWorker.controller);
+    const legacyFrameSize = () =>
+      held.evaluate(async () => {
+        const image = new Image();
+        image.src = "/cats-faces.webp";
+        await image.decode();
+        return [image.naturalWidth, image.naturalHeight];
+      });
+    expect(await legacyFrameSize()).toEqual([1152, 1152]);
     const before = await page.evaluate(() => performance.timeOrigin);
     candidate = "b".repeat(12);
     await page
@@ -91,6 +99,7 @@ test("native A-to-B update needs consent, retains a held client, and rejects a b
     expect(keys).toContain("doku-" + identity.build);
     expect(keys).toContain("doku-" + candidate);
     await expect(held.locator("#cell-0 img")).toBeVisible();
+    expect(await legacyFrameSize()).toEqual([1152, 1152]);
     candidate = "c".repeat(12);
     broken = true;
     await page.evaluate(async () =>

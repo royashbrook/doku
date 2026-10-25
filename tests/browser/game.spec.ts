@@ -60,7 +60,7 @@ test("poodles and theme settings persist without changing the puzzle", async ({
   await page.locator("#cell-" + boards[0].solution[0]).click();
   await expect(page.locator(".pet-cell img")).toHaveAttribute(
     "src",
-    "/poodles-faces.webp",
+    "/poodles-motion.webp",
   );
 });
 for (const width of [360, 390, 430])
@@ -167,7 +167,7 @@ test("offline installed navigation and primary flow, including notices", async (
   expect(notices).toContain("svelte");
   const atlases = await page.evaluate(async () =>
     Promise.all(
-      ["/cats-faces.webp", "/poodles-faces.webp"].map(async (path) => {
+      ["/cats-motion.webp", "/poodles-motion.webp"].map(async (path) => {
         const response = await fetch(path);
         return {
           ok: response.ok,
@@ -219,6 +219,11 @@ test("reduced motion disables pet entrance, glances and blinks", async ({
 test("pet identities survive reload and skin changes, with visible glance and blink frames", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    let seed = 8911;
+    Math.random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  });
+  await page.clock.install();
   await page.goto("/?puzzle=1");
   for (const at of boards[0].solution.slice(0, 4))
     await page.locator(`#cell-${at}`).tap();
@@ -234,32 +239,60 @@ test("pet identities survive reload and skin changes, with visible glance and bl
     ),
   ).toEqual(identities);
 
-  const samples = await pets.first().evaluate(async (pet) => {
-    const image = pet.querySelector("img")!;
-    await image.decode();
-    const frame = image.parentElement!;
-    const animation = image.getAnimations()[0];
-    animation.pause();
-    const timing = animation.effect!.getTiming();
-    const positions = [];
-    for (const progress of [0.1, 0.35, 0.65, 0.195]) {
-      animation.currentTime =
-        Number(timing.delay) + Number(timing.duration) * progress;
-      positions.push(
-        Math.round(
-          parseFloat(getComputedStyle(image).left) / frame.clientWidth,
-        ),
-      );
-    }
-    return {
-      positions,
-      row: Math.round(
-        parseFloat(getComputedStyle(image).top) / frame.clientHeight,
-      ),
-    };
+  await page.locator(".board").evaluate((board) => {
+    const samples: {
+      frame: number;
+      face: number;
+      row: number;
+      column: number;
+    }[] = [];
+    (window as unknown as { frameSamples: typeof samples }).frameSamples =
+      samples;
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        const pet = change.target as HTMLElement;
+        if (!pet.matches(".pet")) continue;
+        const image = pet.querySelector("img")!,
+          box = image.parentElement!;
+        samples.push({
+          frame: Number(pet.dataset.frame),
+          face: Number(pet.dataset.face),
+          row: Math.round(
+            parseFloat(getComputedStyle(image).top) / box.clientHeight,
+          ),
+          column: Math.round(
+            parseFloat(getComputedStyle(image).left) / box.clientWidth,
+          ),
+        });
+      }
+    }).observe(board, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-frame"],
+    });
   });
-  expect(samples.positions).toEqual([0, -1, -2, -3]);
-  expect(samples.row + Number(identities[0])).toBe(0);
+  await page.clock.runFor(45000);
+  const samples = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          frameSamples: {
+            frame: number;
+            face: number;
+            row: number;
+            column: number;
+          }[];
+        }
+      ).frameSamples,
+  );
+  expect(samples.some((sample) => sample.frame === 2)).toBe(true);
+  expect(
+    samples.some((sample) => sample.frame >= 4 && sample.frame <= 10),
+  ).toBe(true);
+  for (const sample of samples) {
+    expect(sample.row + sample.face * 2 + Math.floor(sample.frame / 8)).toBe(0);
+    expect(sample.column + (sample.frame % 8)).toBe(0);
+  }
 
   await page.getByRole("button", { name: "looks", exact: true }).click();
   await page.getByRole("button", { name: /poodles a little curly/ }).click();
@@ -271,7 +304,7 @@ test("pet identities survive reload and skin changes, with visible glance and bl
   ).toEqual(identities);
   await expect(pets.first().locator("img")).toHaveAttribute(
     "src",
-    "/poodles-faces.webp",
+    "/poodles-motion.webp",
   );
 });
 
@@ -329,8 +362,8 @@ test("every pet surface clips one full-size face, including compact home and loo
       for (const frame of frames) {
         expect(frame.width).toBeGreaterThan(20);
         expect(frame.height).toBeCloseTo(frame.width, 1);
-        expect(frame.imageWidth).toBeCloseTo(frame.width * 4, 1);
-        expect(frame.imageHeight).toBeCloseTo(frame.height * 4, 1);
+        expect(frame.imageWidth).toBeCloseTo(frame.width * 8, 1);
+        expect(frame.imageHeight).toBeCloseTo(frame.height * 8, 1);
       }
     }).toPass({ timeout: 5000 });
   await page.goto("/");
@@ -502,8 +535,8 @@ test("both face sheets are decoded once at startup, not per placed pet", async (
     page.evaluate(() => (window as unknown as { decodes: object[] }).decodes);
   await page.goto("/?puzzle=1");
   const startup = [
-    { path: "/cats-faces.webp", connected: false },
-    { path: "/poodles-faces.webp", connected: false },
+    { path: "/cats-motion.webp", connected: false },
+    { path: "/poodles-motion.webp", connected: false },
   ];
   await expect.poll(decodes).toEqual(startup);
   await page.locator("#cell-" + boards[0].solution[0]).click();
