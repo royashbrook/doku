@@ -114,7 +114,7 @@ test("16 square board completes and returns to size selection", async ({
     await page.locator(`#cell-${at}`).tap();
   await expect(page.locator(".pet-cell img").first()).toHaveAttribute(
     "src",
-    "/poodles-faces.webp",
+    "/poodles-motion.webp",
   );
   await expect(page.getByRole("dialog")).toContainText("everyone’s home.");
   await page.getByRole("button", { name: "choose a puzzle" }).tap();

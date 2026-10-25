@@ -39,6 +39,7 @@
   --region-15: #9ea1dc;
   --grid-line: #152332;
   --grid-soft: #15233255;
+  --tile-gap: #fffefd;
   --cross-ink: #152332;
   --cross-face: #fffdf7;
   --cell-glow: #fff6;
@@ -47,6 +48,7 @@
   --surface: #1d2638;
   --surface-raised: #29354b;
   --surface-sunk: #172031;
+  --tile-gap: #b6c2d4;
   --ink: #f2f5fc;
   --ink-dim: #b9c7df;
   --ink-on-accent: #1c2940;
@@ -492,14 +494,14 @@ nav button:hover {
   overflow: hidden;
   touch-action: none;
 }
-/* A rounded tile inside each square: the corners outside it take a deeper
-   shade of the same colour, so squares read as tiles and regions stay whole. */
+/* The gutter is painted inside the button, so it never takes space from the
+   touch grid or breaks the continuous region-boundary lines. */
 .cell::before {
   content: "";
   position: absolute;
-  inset: 1px;
+  inset: 0.8px;
   border-radius: 24%;
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--region) 72%, #000);
+  box-shadow: 0 0 0 6px var(--tile-gap);
   pointer-events: none;
 }
 .cell:hover {

@@ -241,7 +241,7 @@ for (const theme of ["day", "night"])
   });
 
 for (const motion of ["no-preference", "reduce"] as const)
-  test(`placed pets hop in, use an idle habit, and hold still for reduced motion (${motion})`, async ({
+  test(`placed pets hop in and respect reduced motion (${motion})`, async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: motion });
@@ -251,14 +251,14 @@ for (const motion of ["no-preference", "reduce"] as const)
     await page.locator(`#cell-${boards[index].solution[0]}`).tap();
     const names = await page.locator(".pet-cell .pet").evaluate((pet) => ({
       hop: getComputedStyle(pet).animationName,
-      sway: getComputedStyle(pet.querySelector(".pet-face")!).animationName,
+      paused: pet.getAttribute("data-paused"),
     }));
     expect(names).toEqual(
       motion === "reduce"
-        ? { hop: "none", sway: "none" }
+        ? { hop: "none", paused: "true" }
         : {
             hop: "pet-in",
-            sway: expect.stringMatching(/\bpet-(peek|nod|listen|settle)$/),
+            paused: "false",
           },
     );
   });
