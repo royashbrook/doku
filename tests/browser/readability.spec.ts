@@ -63,7 +63,7 @@ for (const theme of ["day", "night"])
             edgeStroke: Number(
               cell.querySelector(".cross-edge")!.getAttribute("stroke-width"),
             ),
-            tile: getComputedStyle(cell, "::before").borderRadius,
+            tile: getComputedStyle(cell).borderRadius,
             fill: getComputedStyle(cell).backgroundColor,
             owns:
               document

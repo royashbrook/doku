@@ -37,18 +37,13 @@
   --region-13: #98c9d5;
   --region-14: #df9aab;
   --region-15: #9ea1dc;
-  --grid-line: #152332;
-  --grid-soft: #15233255;
-  --tile-gap: #fffefd;
   --cross-ink: #152332;
   --cross-face: #fffdf7;
-  --cell-glow: #fff6;
 }
 :root[data-theme="night"] {
   --surface: #1d2638;
   --surface-raised: #29354b;
   --surface-sunk: #172031;
-  --tile-gap: #b6c2d4;
   --ink: #f2f5fc;
   --ink-dim: #b9c7df;
   --ink-on-accent: #1c2940;
@@ -423,7 +418,6 @@ nav button:hover {
   aspect-ratio: 1;
   border-radius: 7px;
   background: var(--region);
-  box-shadow: inset 0 0 0 1.5px rgb(0 0 0 / 0.18);
   font-size: 11px;
   font-weight: 700;
   color: rgb(0 0 0 / 0.6);
@@ -454,23 +448,13 @@ nav button:hover {
   min-width: var(--fit);
   align-self: center;
 }
-/* The rounded clip cuts the edge cells' borders at the corners; redraw the frame on top. */
-.board-wrap::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 2px solid var(--grid-line);
-  border-radius: 16px;
-  pointer-events: none;
-}
 .board {
   display: grid;
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   grid-template-rows: repeat(var(--size), minmax(0, 1fr));
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 16px;
-  box-shadow: var(--shadow);
+  background: var(--surface);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -485,27 +469,15 @@ nav button:hover {
   justify-content: center;
   position: relative;
   border-style: solid;
-  border-color: var(--grid-soft);
-  border-top-color: var(--grid-line);
-  border-left-color: var(--grid-line);
+  /* Transparent borders keep the full tap boxes while exposing canvas gaps.
+     Wider region boundaries use the same empty space, not another outline. */
+  border-color: transparent;
   background: var(--region);
+  background-clip: padding-box;
   color: var(--cross-ink);
-  border-radius: 0;
+  border-radius: 4px;
   overflow: hidden;
   touch-action: none;
-}
-/* The gutter is painted inside the button, so it never takes space from the
-   touch grid or breaks the continuous region-boundary lines. */
-.cell::before {
-  content: "";
-  position: absolute;
-  inset: 0.8px;
-  border-radius: 24%;
-  box-shadow: 0 0 0 6px var(--tile-gap);
-  pointer-events: none;
-}
-.cell:hover {
-  box-shadow: inset 0 0 0 2px var(--cell-glow);
 }
 .cell.pet-cell .pet {
   position: relative;

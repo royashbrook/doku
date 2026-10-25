@@ -415,9 +415,7 @@ test("the color row shows each region's pet once it is placed", async ({
   await page.locator(`#cell-${at}`).click();
   await expect(row.locator(".pet")).toHaveCount(0);
 });
-test("a frame over the board redraws the corners the rounded clip cuts", async ({
-  page,
-}) => {
+test("the board has no decorative outline overlay", async ({ page }) => {
   await page.goto("/?puzzle=1");
   const frame = await page.locator(".board-wrap").evaluate((wrap) => {
     const ring = getComputedStyle(wrap, "::after");
@@ -426,8 +424,6 @@ test("a frame over the board redraws the corners the rounded clip cuts", async (
     return {
       content: ring.content,
       width: ring.borderTopWidth,
-      radius: ring.borderTopLeftRadius,
-      pointer: ring.pointerEvents,
       covers: [
         board.left - box.left,
         board.top - box.top,
@@ -436,10 +432,8 @@ test("a frame over the board redraws the corners the rounded clip cuts", async (
     };
   });
   expect(frame).toEqual({
-    content: '""',
-    width: "2px",
-    radius: "16px",
-    pointer: "none",
+    content: "none",
+    width: "0px",
     covers: [0, 0, 0],
   });
 });
