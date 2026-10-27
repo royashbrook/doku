@@ -1,13 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import {
+  difference,
+  labDifference,
+  neighbours,
+  paint,
+  palette,
+} from "../src/lib/colors.ts";
+import type { Puzzle } from "../src/lib/puzzle.ts";
 
 const css = readFileSync("src/app.css", "utf8");
-const palette = Array.from({ length: 16 }, (_, i) => {
-  const match = css.match(new RegExp(`--region-${i}: (#[a-f0-9]{6});`));
-  assert.ok(match, `region ${i} has a colour`);
-  return match[1];
-});
+const boards = JSON.parse(
+  readFileSync("src/lib/boards.json", "utf8"),
+) as Puzzle[];
 const rgb = (hex: string) =>
   [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 const linear = (v: number) =>
@@ -87,5 +93,36 @@ test("cross ink remains high contrast on all sixteen colours", () => {
       (values[1] + 0.05) / (values[0] + 0.05) >= 4.5,
       `cross ink on ${fill}`,
     );
+  }
+});
+
+test("colour difference matches the CIEDE2000 reference pairs", () => {
+  // Sharma, Wu and Dalal (2005), pairs 1, 7, 17 and 25.
+  for (const [one, two, expected] of [
+    [[50, 2.6772, -79.7751], [50, 0, -82.7485], 2.0425],
+    [[50, 0, 0], [50, -1, 2], 2.3669],
+    [[50, 2.5, 0], [73, 25, -18], 27.1492],
+    [[60.2574, -34.0099, 36.2677], [60.4626, -34.1751, 39.4387], 1.2644],
+  ] as [number[], number[], number][])
+    assert.ok(Math.abs(labDifference(one, two) - expected) < 1e-4);
+});
+
+test("no two of the sixteen colours look alike", () => {
+  for (let i = 0; i < palette.length; i++)
+    for (let j = i + 1; j < palette.length; j++)
+      assert.ok(
+        difference(palette[i], palette[j]) >= 15,
+        `colours ${i}/${j} are too close`,
+      );
+});
+
+test("regions that touch get clearly different colours on every board", () => {
+  for (const [at, board] of boards.entries()) {
+    const colors = paint(board, palette);
+    assert.equal(new Set(colors).size, board.size, `board ${at} reuses a colour`);
+    for (const [a, b] of neighbours(board)) {
+      const gap = difference(palette[colors[a]], palette[colors[b]]);
+      assert.ok(gap >= 25, `board ${at} regions ${a}/${b}: ${gap.toFixed(1)}`);
+    }
   }
 });
