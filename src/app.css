@@ -19,24 +19,7 @@
   --cat-backdrop: #f2d9b6;
   --dog-backdrop: #c7e0ef;
   --mark-heart: #b44966;
-  /* Keep region identities vivid in both themes. Numbers and boundaries are
-     still needed: colour separation is not a colour-blindness guarantee. */
-  --region-0: #d56a65;
-  --region-1: #479ecd;
-  --region-2: #a378ce;
-  --region-3: #4fb779;
-  --region-4: #caae3d;
-  --region-5: #ca833d;
-  --region-6: #39b4ae;
-  --region-7: #a0bd49;
-  --region-8: #d86fa3;
-  --region-9: #add18f;
-  --region-10: #ce9678;
-  --region-11: #46a53b;
-  --region-12: #d565ca;
-  --region-13: #98c9d5;
-  --region-14: #df9aab;
-  --region-15: #9ea1dc;
+  /* Region colours live in src/lib/colors.ts, one palette for both themes. */
   --cross-ink: #152332;
   --cross-face: #fffdf7;
 }

@@ -23,6 +23,7 @@
   import Pet from "./lib/Pet.svelte";
   import rawBoards from "./lib/boards.json";
   import { blocked, conflict, dailyIndex, hint, won } from "./lib/puzzle.ts";
+  import { paint, palette } from "./lib/colors.ts";
   import type { Cell, Hint, Puzzle } from "./lib/puzzle.ts";
   import { load, parseSave, store } from "./lib/storage.ts";
   import type { Save } from "./lib/storage.ts";
@@ -59,6 +60,7 @@
     updater: ReturnType<typeof startPwa> | undefined;
   let group = $state(5);
   const puzzle = $derived(puzzles[index]);
+  const colors = $derived(paint(puzzle, palette).map((pick) => palette[pick]));
   const excluded = $derived(blocked(puzzle, cells));
   const pets = $derived(cells.filter((v) => v === 2).length);
   const regionPets = $derived(
@@ -438,7 +440,7 @@
           >
             {#each regionPets as at, region}
               <li
-                style={`--region:var(--region-${region})`}
+                style={`--region:${colors[region]}`}
                 aria-label={`Region ${region + 1}: ${at < 0 ? "empty" : save.skin === "cats" ? "cat" : "poodle"}`}
               >
                 {#if at >= 0}<Pet
@@ -479,7 +481,7 @@
                   (cell === 0 && save.autoCross && excluded.has(at))}
                 class:bad={conflictCells.has(at)}
                 class:hinted={clue?.index === at}
-                style={`--region:var(--region-${region})`}
+                style={`--region:${colors[region]}`}
                 aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : cell === 3 ? "maybe" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : "empty"}`}
                 aria-pressed={cell === 2}
                 disabled={finished}
@@ -497,13 +499,13 @@
                   />{:else if cell === 1 || (cell === 0 && save.autoCross && excluded.has(at))}<IconX
                     class="cross-edge"
                     size={18}
-                    viewBox="4 4 16 16"
-                    stroke={4}
+                    viewBox="2 2 20 20"
+                    stroke={5.6}
                   /><IconX
                     class="cross"
                     size={18}
-                    viewBox="4 4 16 16"
-                    stroke={3}
+                    viewBox="2 2 20 20"
+                    stroke={4.4}
                   />{:else if cell === 3}<IconQuestionMark
                     class="maybe-edge"
                     size={18}

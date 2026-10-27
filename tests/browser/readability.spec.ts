@@ -50,6 +50,7 @@ for (const theme of ["day", "night"])
           ).matrixTransform(matrix);
           return {
             coverage: (end.x - start.x) / r.width,
+            weight: (stroke * matrix.a) / r.width,
             left: start.x - r.x,
             right: r.right - end.x,
             opacity: getComputedStyle(svg).opacity,
@@ -80,8 +81,10 @@ for (const theme of ["day", "night"])
           .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
       };
       for (const mark of marks) {
-        expect(mark.coverage).toBeGreaterThan(0.8);
-        expect(mark.coverage).toBeLessThan(1);
+        // A small, chunky X: it sits inside the square with thick lines.
+        expect(mark.coverage).toBeGreaterThan(0.7);
+        expect(mark.coverage).toBeLessThan(0.88);
+        expect(mark.weight).toBeGreaterThan(0.19);
         expect(mark.left).toBeGreaterThan(0);
         expect(mark.right).toBeGreaterThan(0);
         expect(mark.opacity).toBe("1");
@@ -211,10 +214,10 @@ for (const theme of ["day", "night"])
       expect(label.fill).toBe(label.cellFill);
       expect(label.opacity).toBe("1");
       expect(label.inside).toBe(true);
-      // A corner-sized mark stays dominant: at least three quarters of its
-      // sampled centreline remains exposed even with a two-digit label.
+      // A corner-sized mark stays dominant: at least 70% of its sampled
+      // centreline remains exposed even with a two-digit label over the small X.
       expect(label.exposed, JSON.stringify(label.debug)).toBeGreaterThanOrEqual(
-        0.75,
+        0.7,
       );
     }
     const petClear = await page.locator(".pet-cell").evaluateAll((cells) =>
