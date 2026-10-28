@@ -261,3 +261,35 @@ for (const motion of ["no-preference", "reduce"] as const)
           },
     );
   });
+
+for (const size of [5, 16])
+  test(`each colour has its own faint mark on a ${size} board`, async ({
+    page,
+  }) => {
+    const index = boards.findIndex((board) => board.size === size);
+    await page.goto(`/?puzzle=${index + 1}`);
+    const found = await page.evaluate(() => {
+      const read = (el: Element) => ({
+        fill: getComputedStyle(el).backgroundColor,
+        marks: [...el.querySelectorAll(".mark")].map((m) => ({
+          name: m.getAttribute("data-mark"),
+          opacity: Number(getComputedStyle(m).opacity),
+        })),
+      });
+      return {
+        cells: [...document.querySelectorAll(".board .cell")].map(read),
+        row: [...document.querySelectorAll(".region-row li")].map(read),
+      };
+    });
+    const byFill = new Map<string, string>();
+    for (const spot of [...found.cells, ...found.row]) {
+      expect(spot.marks).toHaveLength(1);
+      const [{ name, opacity }] = spot.marks;
+      expect(opacity).toBeGreaterThan(0.08);
+      expect(opacity).toBeLessThan(0.25);
+      expect(byFill.get(spot.fill) ?? name).toBe(name);
+      byFill.set(spot.fill, name!);
+    }
+    expect(byFill.size).toBe(size);
+    expect(new Set(byFill.values()).size).toBe(size);
+  });

@@ -122,7 +122,20 @@ test("regions that touch get clearly different colours on every board", () => {
     assert.equal(new Set(colors).size, board.size, `board ${at} reuses a colour`);
     for (const [a, b] of neighbours(board)) {
       const gap = difference(palette[colors[a]], palette[colors[b]]);
-      assert.ok(gap >= 25, `board ${at} regions ${a}/${b}: ${gap.toFixed(1)}`);
+      // 23 keeps the browns down to two; the old palette in region order was 9.7.
+      assert.ok(gap >= 23, `board ${at} regions ${a}/${b}: ${gap.toFixed(1)}`);
     }
   }
+});
+
+test("only two colours are brown-ish, and they stay far apart", () => {
+  const browns = palette.filter((hex) => {
+    const [, a, b] = lab(hex),
+      hue = ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
+    return hue > 20 && hue < 115;
+  });
+  assert.ok(browns.length <= 2, `browns: ${browns.join(" ")}`);
+  for (let i = 0; i < browns.length; i++)
+    for (let j = i + 1; j < browns.length; j++)
+      assert.ok(difference(browns[i], browns[j]) >= 30);
 });
