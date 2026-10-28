@@ -1,25 +1,26 @@
 import type { Puzzle } from "./puzzle.ts";
 
 // Region colours, one set for both themes. Each board picks its own order (paint).
+// Only two sit in the brown family (lab hue 20-115): brown shades blur together on phones.
 // Numbers and boundaries are still needed: colour separation is not a
 // colour-blindness guarantee.
 export const palette = [
-  "#4ccf6b",
-  "#cbb7eb",
-  "#e7aab3",
-  "#d5b490",
-  "#ce7464",
-  "#b39529",
-  "#3695c4",
-  "#9fc6db",
-  "#db6992",
-  "#7ed3c4",
-  "#cccd7b",
-  "#6e983b",
-  "#2d9e7c",
-  "#c77930",
-  "#808cdd",
-  "#b773cb",
+  "#e2b4b5",
+  "#d77d68",
+  "#2ba154",
+  "#eaaeeb",
+  "#819e24",
+  "#359c8c",
+  "#4dd030",
+  "#71d6dd",
+  "#d965dc",
+  "#dd6b90",
+  "#5694c0",
+  "#8f87db",
+  "#63d3a2",
+  "#bcc2eb",
+  "#c8ac4a",
+  "#b9d08b",
 ];
 
 const rgb = (hex: string) =>

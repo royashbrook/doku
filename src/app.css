@@ -1029,3 +1029,25 @@ textarea {
     width: min(352px, 100%);
   }
 }
+/* A faint shape per colour, under every other mark on the square. It sits a
+   little low so an optional region number at the top does not cover it. */
+.cell .mark {
+  position: absolute;
+  top: 57%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  height: 50%;
+  color: var(--cross-ink);
+  opacity: 0.14;
+  pointer-events: none;
+}
+.region-row li > * {
+  grid-area: 1 / 1;
+}
+.region-row li .mark {
+  width: 62%;
+  height: 62%;
+  color: var(--cross-ink);
+  opacity: 0.18;
+}

@@ -21,6 +21,7 @@
     IconSun,
   } from "@tabler/icons-svelte";
   import Pet from "./lib/Pet.svelte";
+  import Mark from "./lib/Mark.svelte";
   import rawBoards from "./lib/boards.json";
   import { blocked, conflict, dailyIndex, hint, won } from "./lib/puzzle.ts";
   import { paint, palette } from "./lib/colors.ts";
@@ -60,7 +61,7 @@
     updater: ReturnType<typeof startPwa> | undefined;
   let group = $state(5);
   const puzzle = $derived(puzzles[index]);
-  const colors = $derived(paint(puzzle, palette).map((pick) => palette[pick]));
+  const picks = $derived(paint(puzzle, palette));
   const excluded = $derived(blocked(puzzle, cells));
   const pets = $derived(cells.filter((v) => v === 2).length);
   const regionPets = $derived(
@@ -440,13 +441,15 @@
           >
             {#each regionPets as at, region}
               <li
-                style={`--region:${colors[region]}`}
+                style={`--region:${palette[picks[region]]}`}
                 aria-label={`Region ${region + 1}: ${at < 0 ? "empty" : save.skin === "cats" ? "cat" : "poodle"}`}
               >
                 {#if at >= 0}<Pet
                     skin={save.skin}
                     identity={index + region}
-                  />{:else if save.labels}{region + 1}{/if}
+                  />{:else}<Mark color={picks[region]} />{#if save.labels}<span
+                      >{region + 1}</span
+                    >{/if}{/if}
               </li>
             {/each}
           </ul>
@@ -481,7 +484,7 @@
                   (cell === 0 && save.autoCross && excluded.has(at))}
                 class:bad={conflictCells.has(at)}
                 class:hinted={clue?.index === at}
-                style={`--region:${colors[region]}`}
+                style={`--region:${palette[picks[region]]}`}
                 aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : cell === 3 ? "maybe" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : "empty"}`}
                 aria-pressed={cell === 2}
                 disabled={finished}
@@ -493,6 +496,7 @@
                 onlostpointercapture={cancelDrag}
                 onkeydown={(event) => keys(event, at)}
               >
+                {#if cell !== 2}<Mark color={picks[region]} />{/if}
                 {#if cell === 2}<Pet
                     skin={save.skin}
                     identity={index + region}
