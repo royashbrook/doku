@@ -339,7 +339,12 @@ export function hint(puzzle: Puzzle, cells: Cell[]): Hint | null {
     return {
       index: why.index,
       action: "place",
-      text: why.steps.at(-1)!.text,
+      // The last step's sentence is only true on the board after the earlier
+      // steps, so a longer explanation waits behind why?.
+      text:
+        why.steps.length === 1
+          ? why.steps[0].text
+          : "A pet goes here. Tap why? to see how we know.",
       steps: why.steps,
     };
   // Two shipped boards reach states these rules cannot explain. Fall back to the solver there.

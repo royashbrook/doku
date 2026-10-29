@@ -259,6 +259,14 @@ test("explained hints solve nearly every board by plain logic, and every step is
             : [],
         ),
       );
+      // Before why? the hint only claims one square is left when the board
+      // already shows that.
+      const open = h.steps.at(-1)!.focus.filter((i) => !out.has(i));
+      assert.equal(
+        h.text.includes("one square is left"),
+        open.length === 1,
+        h.text,
+      );
       for (const step of h.steps) {
         for (const i of step.out) {
           assert.ok(
