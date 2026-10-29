@@ -5,6 +5,8 @@
     IconArrowRight,
     IconCalendar,
     IconCheck,
+    IconChevronLeft,
+    IconChevronRight,
     IconHelp,
     IconPaw,
     IconPlayerPlayFilled,
@@ -41,7 +43,13 @@
     cells = $state<Cell[]>([]),
     history = $state<Cell[][]>([]);
   let clue = $state<Hint | null>(null),
-    message = $state("");
+    message = $state(""),
+    step = $state(-1);
+  // The hint explanation step on screen, if the player asked why.
+  const shown = $derived(clue?.steps?.[step] ?? null);
+  const earlier = $derived(
+    new Set(clue?.steps?.slice(0, Math.max(step, 0)).flatMap((s) => s.out)),
+  );
   let daily = $state(false),
     finished = $state(false);
   let drag: {
@@ -153,6 +161,7 @@
   }
   function getHint() {
     clue = hint(puzzle, cells);
+    step = -1;
   }
   async function share() {
     const url = new URL(location.origin);
@@ -466,6 +475,7 @@
         <div class="board-wrap">
           <div
             class="board"
+            class:explaining={!!shown}
             style={`--size:${puzzle.size}`}
             onpointermove={dragMove}
             role="group"
@@ -484,6 +494,9 @@
                   (cell === 0 && save.autoCross && excluded.has(at))}
                 class:bad={conflictCells.has(at)}
                 class:hinted={clue?.index === at}
+                class:focus={shown?.focus.includes(at)}
+                class:ruled={shown?.out.includes(at)}
+                class:earlier={earlier.has(at)}
                 style={`--region:${palette[picks[region]]}`}
                 aria-label={`Row ${row + 1}, column ${col + 1}, region ${region + 1}: ${cell === 2 ? (save.skin === "cats" ? "cat" : "poodle") : cell === 1 ? "crossed out" : cell === 3 ? "maybe" : save.autoCross && excluded.has(at) ? "ruled out by a pet" : "empty"}`}
                 aria-pressed={cell === 2}
@@ -522,22 +535,39 @@
           </div>
         </div>
         <div class="hint-line" aria-live="polite">
-          {#if clue}<p>{clue.text}</p>{:else if message}<p>
+          {#if shown && clue?.steps}<p>
+              <strong>{step + 1} of {clue.steps.length}.</strong>
+              {shown.text}
+            </p>{:else if clue}<p>{clue.text}</p>{:else if message}<p>
               {message}
             </p>{:else}<p>
               tap: cross, pet, maybe, clear. slide to cross out.
             </p>{/if}
         </div>
         <div class="game-tools">
-          <button onclick={undo} disabled={!history.length}
-            ><IconUndo size={23} /><span>undo</span></button
-          ><button onclick={getHint} disabled={finished}
-            ><IconSparkles size={23} /><span>hint</span></button
-          ><button onclick={() => (panel = "reset")}
-            ><IconRefresh size={23} /><span>reset</span></button
-          ><button onclick={() => navigate("looks")}
-            ><IconPaw size={23} /><span>looks</span></button
-          >
+          {#if shown && clue?.steps}<button
+              onclick={() => step--}
+              disabled={step === 0}
+              ><IconChevronLeft size={23} /><span>back</span></button
+            ><button
+              onclick={() =>
+                (step = step + 1 < clue!.steps!.length ? step + 1 : -1)}
+              >{#if step + 1 < clue.steps.length}<IconChevronRight
+                  size={23}
+                /><span>next</span>{:else}<IconCheck size={23} /><span
+                  >done</span
+                >{/if}</button
+            >{:else}<button onclick={undo} disabled={!history.length}
+              ><IconUndo size={23} /><span>undo</span></button
+            >{#if clue?.steps}<button onclick={() => (step = 0)}
+                ><IconHelp size={23} /><span>why?</span></button
+              >{:else}<button onclick={getHint} disabled={finished}
+                ><IconSparkles size={23} /><span>hint</span></button
+              >{/if}<button onclick={() => (panel = "reset")}
+              ><IconRefresh size={23} /><span>reset</span></button
+            ><button onclick={() => navigate("looks")}
+              ><IconPaw size={23} /><span>looks</span></button
+            >{/if}
         </div>
       </section>
     {:else if screen === "levels"}

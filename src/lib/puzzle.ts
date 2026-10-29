@@ -126,10 +126,193 @@ export function blocked(puzzle: Puzzle, cells: Cell[]): Set<number> {
   );
 }
 
+// One step of a hint explanation. focus lights up the squares the step is
+// about; out are the squares this step rules out.
+export interface Step {
+  text: string;
+  focus: number[];
+  out: number[];
+}
+export interface Explanation {
+  index: number;
+  steps: Step[];
+}
+
+type Kind = "row" | "column" | "color";
+interface Group {
+  kind: Kind;
+  cells: number[];
+}
+
+// Reason the way a player would: rule squares out until a row, column or color
+// has one open square left, then explain only the steps that led there.
+export function explain(puzzle: Puzzle, cells: Cell[]): Explanation | null {
+  const n = puzzle.size,
+    all = cells.map((_, i) => i);
+  const groups: Group[] = [];
+  for (let k = 0; k < n; k++) {
+    groups.push({
+      kind: "row",
+      cells: all.filter((i) => Math.floor(i / n) === k),
+    });
+    groups.push({ kind: "column", cells: all.filter((i) => i % n === k) });
+    groups.push({
+      kind: "color",
+      cells: all.filter((i) => puzzle.regions[i] === k),
+    });
+  }
+  const pets = all.filter((i) => cells[i] === 2);
+  const live = groups.filter((g) => !g.cells.some((i) => cells[i] === 2));
+  const out = new Set<number>([
+    ...all.filter((i) => cells[i] === 1),
+    ...blocked(puzzle, cells),
+  ]);
+  for (const i of pets) out.add(i);
+  const open = (g: Group) => g.cells.filter((i) => !out.has(i));
+  const key: Record<Kind, (i: number) => number> = {
+    row: (i) => Math.floor(i / n),
+    column: (i) => i % n,
+    color: (i) => puzzle.regions[i],
+  };
+  const peers = all.map((a) =>
+    all.filter((b) => a === b || conflict(puzzle, a, b)),
+  );
+  const steps: (Step & { uses: number[] })[] = [];
+  const record = (
+    text: string,
+    focus: number[],
+    ruled: number[],
+    uses: number[],
+  ) => {
+    for (const i of ruled) out.add(i);
+    steps.push({ text, focus, out: ruled, uses });
+  };
+
+  // k groups of one kind whose open squares fit inside k groups of another kind.
+  const confine = (k: number, inner: Kind, outer: Kind): boolean => {
+    const inners = live.filter((g) => g.kind === inner),
+      outers = live.filter((g) => g.kind === outer);
+    const pick = (
+      from: number,
+      chosen: Group[],
+      keys: Set<number>,
+    ): boolean => {
+      // Hosts only grow as groups are added, so stop once there are too many.
+      if (keys.size > k) return false;
+      if (chosen.length === k) {
+        const squares = chosen.flatMap(open);
+        const hosts = outers.filter((o) => keys.has(key[outer](o.cells[0])));
+        if (hosts.length !== k) return false;
+        const ruled = hosts.flatMap(open).filter((i) => !squares.includes(i));
+        if (!ruled.length) return false;
+        record(
+          k === 1
+            ? `This ${inner} only has open squares in one ${outer}. Its pet goes there, so the rest of that ${outer} is out.`
+            : `These ${k} ${inner}s only have open squares in ${k} ${outer}s. Their pets fill those, so the rest is out.`,
+          [...squares, ...hosts.flatMap((o) => o.cells)],
+          ruled,
+          chosen.flatMap((g) => g.cells),
+        );
+        return true;
+      }
+      for (let i = from; i < inners.length; i++) {
+        const squares = open(inners[i]);
+        if (
+          squares.length &&
+          pick(
+            i + 1,
+            [...chosen, inners[i]],
+            new Set([...keys, ...squares.map(key[outer])]),
+          )
+        )
+          return true;
+      }
+      return false;
+    };
+    return pick(0, [], new Set());
+  };
+
+  // A pet on this square, plus any pets it would force, would leave some row,
+  // column or color with nowhere to go. depth = how many forced pets to follow.
+  const contradiction = (depth: number): boolean => {
+    for (const at of all) {
+      if (out.has(at)) continue;
+      const gone = new Set(out),
+        placed = [at],
+        used: number[] = [];
+      const take = (pet: number) => {
+        for (const i of peers[pet]) gone.add(i);
+      };
+      take(at);
+      for (let forced = 0; forced <= depth; forced++) {
+        const free = live.filter(
+          (g) => !g.cells.some((i) => placed.includes(i)),
+        );
+        const empty = free.find((g) => g.cells.every((i) => gone.has(i)));
+        if (empty) {
+          record(
+            forced === 0
+              ? `A pet here would block every open square in this ${empty.kind}. So it is out.`
+              : `A pet here would force ${forced === 1 ? "a pet" : "pets"} on the other lit ${forced === 1 ? "square" : "squares"}, leaving this ${empty.kind} nowhere to go. So it is out.`,
+            [...placed, ...empty.cells],
+            [at],
+            [...used, ...empty.cells],
+          );
+          return true;
+        }
+        const next = free.find(
+          (g) => g.cells.filter((i) => !gone.has(i)).length === 1,
+        );
+        if (!next) break;
+        const pet = next.cells.find((i) => !gone.has(i))!;
+        placed.push(pet);
+        used.push(...next.cells);
+        take(pet);
+      }
+    }
+    return false;
+  };
+
+  const kinds: [Kind, Kind][] = [
+    ["color", "row"],
+    ["color", "column"],
+    ["row", "color"],
+    ["column", "color"],
+  ];
+  for (;;) {
+    const single = live.find((g) => open(g).length === 1);
+    if (single) {
+      const index = open(single)[0];
+      // Keep only the steps the final row, column or color depends on.
+      let needed = new Set(single.cells);
+      const kept: Step[] = [];
+      for (const step of [...steps].reverse())
+        if (step.out.some((i) => needed.has(i))) {
+          kept.unshift({ text: step.text, focus: step.focus, out: step.out });
+          needed = new Set([...needed, ...step.uses]);
+        }
+      kept.push({
+        text: `${kept.length ? "Now only" : "Only"} one square is left in this ${single.kind}. A pet goes here.`,
+        focus: single.cells,
+        out: [],
+      });
+      return { index, steps: kept };
+    }
+    if (live.some((g) => !open(g).length)) return null;
+    const progressed =
+      kinds.some(([a, b]) => confine(1, a, b)) ||
+      contradiction(0) ||
+      [2, 3, 4, 5].some((k) => kinds.some(([a, b]) => confine(k, a, b))) ||
+      contradiction(3);
+    if (!progressed) return null;
+  }
+}
+
 export interface Hint {
   index: number;
   text: string;
   action: "place" | "clear";
+  steps?: Step[];
 }
 export function hint(puzzle: Puzzle, cells: Cell[]): Hint | null {
   if (won(puzzle, cells)) return null;
@@ -151,36 +334,15 @@ export function hint(puzzle: Puzzle, cells: Cell[]): Hint | null {
       text: "We still need this square. Try clearing its cross.",
     };
   }
-  const excluded = blocked(puzzle, cells);
-  const groups: { indices: number[]; label: string }[] = [];
-  for (let k = 0; k < puzzle.size; k++) {
-    groups.push({
-      indices: cells
-        .map((_, i) => i)
-        .filter((i) => Math.floor(i / puzzle.size) === k),
-      label: "row",
-    });
-    groups.push({
-      indices: cells.map((_, i) => i).filter((i) => i % puzzle.size === k),
-      label: "column",
-    });
-    groups.push({
-      indices: cells.map((_, i) => i).filter((i) => puzzle.regions[i] === k),
-      label: "region",
-    });
-  }
-  for (const group of groups) {
-    if (group.indices.some((i) => cells[i] === 2)) continue;
-    const available = group.indices.filter(
-      (i) => cells[i] !== 1 && !excluded.has(i),
-    );
-    if (available.length === 1)
-      return {
-        index: available[0],
-        action: "place",
-        text: `Only one square is left in this ${group.label}. A pet belongs here.`,
-      };
-  }
+  const why = explain(puzzle, cells);
+  if (why)
+    return {
+      index: why.index,
+      action: "place",
+      text: why.steps.at(-1)!.text,
+      steps: why.steps,
+    };
+  // Two boards still need a guess somewhere. Fall back to the solver there.
   const index = puzzle.solution.find((i) => cells[i] !== 2)!;
   return {
     index,
