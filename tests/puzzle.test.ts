@@ -241,3 +241,41 @@ test("an independent region-first oracle verifies every larger board", () => {
     assert.deepEqual(solutions(board, cells), []);
   }
 });
+
+test("explained hints solve nearly every board by plain logic, and every step is sound", () => {
+  let solved = 0;
+  for (const board of boards as Puzzle[]) {
+    const cells: Cell[] = board.regions.map(() => 0);
+    while (!won(board, cells)) {
+      const h = hint(board, cells)!;
+      assert.ok(board.solution.includes(h.index));
+      if (!h.steps) break;
+      // Replay the explanation: no step rules out a pet square, and the last
+      // step's row, column or color has only the hinted square left.
+      const out = new Set<number>(
+        cells.flatMap((v, i) =>
+          v === 1 || cells.some((p, j) => p === 2 && conflict(board, j, i))
+            ? [i]
+            : [],
+        ),
+      );
+      for (const step of h.steps) {
+        for (const i of step.out) {
+          assert.ok(
+            !board.solution.includes(i),
+            "a step ruled out a pet square",
+          );
+          out.add(i);
+        }
+      }
+      const last = h.steps.at(-1)!;
+      assert.deepEqual(
+        last.focus.filter((i) => !out.has(i)),
+        [h.index],
+      );
+      cells[h.index] = 2;
+    }
+    if (won(board, cells)) solved++;
+  }
+  assert.ok(solved >= 254, `${solved} boards solved by explained hints`);
+});

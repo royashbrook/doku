@@ -1051,3 +1051,31 @@ textarea {
   color: var(--cross-ink);
   opacity: 0.18;
 }
+/* Hint explanations: light the squares a step is about, fade the rest, and
+   draw a small x on squares ruled out so far (red for this step). */
+.board.explaining .cell:not(.focus):not(.hinted) {
+  opacity: 0.35;
+}
+.board.explaining .cell.focus {
+  box-shadow: inset 0 0 0 2px var(--cross-face);
+}
+.board.explaining .cell.ruled::after,
+.board.explaining .cell.earlier::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  --x: var(--ink-dim);
+  background:
+    linear-gradient(45deg, transparent 43%, var(--x) 43% 57%, transparent 57%),
+    linear-gradient(-45deg, transparent 43%, var(--x) 43% 57%, transparent 57%);
+  pointer-events: none;
+}
+.board.explaining .cell.ruled::after {
+  --x: var(--warn);
+}
+.board.explaining .cell.ruled {
+  box-shadow: inset 0 0 0 3px var(--warn);
+}
+.board.explaining .cell.hinted {
+  box-shadow: inset 0 0 0 4px var(--accent);
+}
