@@ -557,6 +557,8 @@
                 /><span>next</span>{:else}<IconCheck size={23} /><span
                   >done</span
                 >{/if}</button
+            ><button onclick={() => (step = -1)}
+              ><IconX size={23} /><span>close</span></button
             >{:else}<button onclick={undo} disabled={!history.length}
               ><IconUndo size={23} /><span>undo</span></button
             >{#if clue?.steps}<button onclick={() => (step = 0)}

@@ -45,3 +45,23 @@ test("why? walks through a hint step by step and lights the board", async ({
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+// A long walk can always be left partway, without losing the hint.
+test("close leaves the walkthrough from any step", async ({ page }) => {
+  await page.goto("/?puzzle=119");
+  await page.getByRole("button", { name: "hint", exact: true }).tap();
+  const target = await page.locator(".hinted").getAttribute("data-cell");
+  const close = page.getByRole("button", { name: "close", exact: true });
+  for (const steps of [0, 1, 3]) {
+    await page.getByRole("button", { name: "why?", exact: true }).tap();
+    for (let i = 0; i < steps; i++)
+      await page.getByRole("button", { name: "next", exact: true }).tap();
+    await expect(page.locator(".hint-line")).toContainText(
+      `${steps + 1} of 4.`,
+    );
+    await close.tap();
+    await expect(page.locator(".board.explaining")).toHaveCount(0);
+    await expect(close).toHaveCount(0);
+    await expect(page.locator(".hinted")).toHaveAttribute("data-cell", target!);
+  }
+});
