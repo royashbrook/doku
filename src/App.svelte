@@ -47,6 +47,10 @@
     step = $state(-1);
   // The hint explanation step on screen, if the player asked why.
   const shown = $derived(clue?.steps?.[step] ?? null);
+  // A one-step hint names a row, column or color, so light it right away.
+  const lit = $derived(
+    shown ?? (clue?.steps?.length === 1 ? clue.steps[0] : null),
+  );
   const earlier = $derived(
     new Set(clue?.steps?.slice(0, Math.max(step, 0)).flatMap((s) => s.out)),
   );
@@ -475,7 +479,7 @@
         <div class="board-wrap">
           <div
             class="board"
-            class:explaining={!!shown}
+            class:explaining={!!lit}
             style={`--size:${puzzle.size}`}
             onpointermove={dragMove}
             role="group"
@@ -494,7 +498,7 @@
                   (cell === 0 && save.autoCross && excluded.has(at))}
                 class:bad={conflictCells.has(at)}
                 class:hinted={clue?.index === at}
-                class:focus={shown?.focus.includes(at)}
+                class:focus={lit?.focus.includes(at)}
                 class:ruled={shown?.out.includes(at)}
                 class:earlier={earlier.has(at)}
                 style={`--region:${palette[picks[region]]}`}

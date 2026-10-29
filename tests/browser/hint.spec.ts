@@ -46,6 +46,33 @@ test("why? walks through a hint step by step and lights the board", async ({
   expect(errors).toEqual([]);
 });
 
+// A longer explanation never claims "one square left" before why?, and a
+// one-step hint lights the color it talks about right away.
+test("the hint line only says what the board already shows", async ({
+  page,
+}) => {
+  const line = page.locator(".hint-line");
+  await page.goto("/?puzzle=119");
+  await page.getByRole("button", { name: "hint", exact: true }).tap();
+  await expect(line).toContainText("Tap why? to see how we know.");
+  await expect(line).not.toContainText("one square is left");
+  await expect(page.locator(".board.explaining")).toHaveCount(0);
+  await page.goto("/?puzzle=33");
+  await page.getByRole("button", { name: "hint", exact: true }).tap();
+  await expect(line).toContainText("Only one square is left in this color.");
+  await expect(page.locator(".board.explaining")).toHaveCount(1);
+  // Every square of that color is lit, and nothing else.
+  const board = await page.locator(".board .cell").evaluateAll((cells) =>
+    cells.map((c) => ({
+      color: getComputedStyle(c).getPropertyValue("--region"),
+      focus: c.classList.contains("focus"),
+    })),
+  );
+  const color = board.find((c) => c.focus)!.color;
+  for (const c of board) expect(c.focus).toBe(c.color === color);
+  await expect(page.locator(".cell.focus.hinted")).toHaveCount(1);
+});
+
 // A long walk can always be left partway, without losing the hint.
 test("close leaves the walkthrough from any step", async ({ page }) => {
   await page.goto("/?puzzle=119");
