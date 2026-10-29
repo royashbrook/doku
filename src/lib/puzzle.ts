@@ -342,7 +342,7 @@ export function hint(puzzle: Puzzle, cells: Cell[]): Hint | null {
       text: why.steps.at(-1)!.text,
       steps: why.steps,
     };
-  // Two boards still need a guess somewhere. Fall back to the solver there.
+  // Two shipped boards reach states these rules cannot explain. Fall back to the solver there.
   const index = puzzle.solution.find((i) => cells[i] !== 2)!;
   return {
     index,
