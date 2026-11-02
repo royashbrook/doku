@@ -197,6 +197,95 @@ test("all normal flows keep requests on the origin and set no cookies", async ({
   expect(outside).toEqual([]);
   expect(await context.cookies()).toEqual([]);
 });
+// the maker's mark reads like the royashbrook.com footer: "made with", then the
+// heart in place of the word love (kept as screen-reader text), then "by", and the
+// whole line is centered on every row, including when it wraps on a 320px phone.
+for (const width of [390, 320]) {
+  test(`phone ${width}: the maker's mark reads made with, heart, by, centered`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "more", exact: true }).click();
+    await page.getByRole("button", { name: "about doku" }).click();
+    const mark = await page.evaluate(() => {
+      const line = document.querySelector(".maker")!;
+      const tokens: string[] = [];
+      const walk = (node: Node) => {
+        if (node instanceof SVGSVGElement) return void tokens.push("<svg>");
+        if (node.nodeType === Node.TEXT_NODE) {
+          const t = (node.textContent ?? "").replace(/\s+/g, " ").trim();
+          if (t) tokens.push(t);
+          return;
+        }
+        node.childNodes.forEach(walk);
+      };
+      walk(line);
+      // every rendered row: union the visible boxes (words, the svg, the links),
+      // skipping the 1px screen-reader text, then compare each row's gaps
+      const hidden = (el: Element | null) => {
+        for (; el && el !== line; el = el.parentElement) {
+          const r = el.getBoundingClientRect();
+          if (r.width <= 1 && r.height <= 1) return true;
+        }
+        return false;
+      };
+      const rects: DOMRect[] = [];
+      for (const el of line.querySelectorAll("*"))
+        if (!hidden(el)) rects.push(...el.getClientRects());
+      const words = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+      for (let n = words.nextNode(); n; n = words.nextNode()) {
+        if (hidden(n.parentElement)) continue;
+        for (const m of (n.textContent ?? "").matchAll(/\S+/g)) {
+          const range = document.createRange();
+          range.setStart(n, m.index!);
+          range.setEnd(n, m.index! + m[0].length);
+          rects.push(...range.getClientRects());
+        }
+      }
+      const rows: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+      }[] = [];
+      for (const r of rects.filter((r) => r.width > 0 && r.height > 0)) {
+        const mid = (r.top + r.bottom) / 2;
+        const row = rows.find((w) => mid >= w.top && mid <= w.bottom);
+        if (row) {
+          row.left = Math.min(row.left, r.left);
+          row.right = Math.max(row.right, r.right);
+        } else
+          rows.push({
+            top: r.top,
+            bottom: r.bottom,
+            left: r.left,
+            right: r.right,
+          });
+      }
+      const box = line.getBoundingClientRect();
+      const cs = getComputedStyle(line);
+      const left =
+        box.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft);
+      const right =
+        box.right -
+        parseFloat(cs.borderRightWidth) -
+        parseFloat(cs.paddingRight);
+      return {
+        order: tokens.join(" "),
+        rows: rows.length,
+        offCentre: rows
+          .map((r) => Math.round(Math.abs(r.left - left - (right - r.right))))
+          .filter((d) => d > 2),
+      };
+    });
+    expect(mark.order).toMatch(
+      /^made with <svg> (love )?by roy \+ ai · sponsor me$/,
+    );
+    expect(mark.rows).toBeGreaterThan(0);
+    expect(mark.offCentre).toEqual([]);
+  });
+}
 test("reduced motion disables pet entrance, glances and blinks", async ({
   page,
 }) => {
