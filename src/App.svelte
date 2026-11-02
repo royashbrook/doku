@@ -758,25 +758,28 @@
       no ads, no lives, no timers, nothing to buy, no accounts, no cookies,
       nothing sold or shared.
     </p>
-    <div class="maker">
-      <IconHeart size={18} style="color:var(--mark-heart)" /><span
-        >made with love by <a
-          href="https://royashbrook.com"
-          target="_blank"
-          rel="noopener">roy</a
-        >
-        +
-        <a href="https://royashbrook.com/agents" target="_blank" rel="noopener"
-          >ai</a
-        >
-        ·
+    <p class="maker">
+      made with <IconHeart
+        size={14}
+        aria-hidden="true"
+        class="mark-heart"
+        style="color:var(--mark-heart)"
+      /><span class="sr">love</span>
+      by
+      <a href="https://royashbrook.com" target="_blank" rel="noopener">roy</a>
+      +
+      <a href="https://royashbrook.com/agents" target="_blank" rel="noopener"
+        >ai</a
+      >
+      <span class="mark-tail"
+        ><span aria-hidden="true" class="mark-dot">·</span>
         <a
           href="https://github.com/sponsors/royashbrook"
           target="_blank"
           rel="noopener">sponsor me</a
         ></span
       >
-    </div>
+    </p>
     <p class="build">
       v{__APP_VERSION__} · {__BUILD_ID__}<br />source {__SOURCE__.slice(0, 12)}
     </p>
